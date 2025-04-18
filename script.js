@@ -42,9 +42,7 @@ document.getElementById('nav-menu').addEventListener('click', function () {
 });
 document.getElementById("pocetnabtn").addEventListener("click", function() {
     const stolovi = document.getElementById("stolovi");
-    if(stolovi.classList.contains("hidden")) {
-            stolovi.classList.remove("hidden");
-    }
+   stolovi.style.display = "grid";
     const meni= document.getElementById("meni");
     if(!meni.classList.contains("hidden")) {
         meni.classList.add("hidden");
@@ -65,9 +63,7 @@ document.getElementById("menibtn").addEventListener("click", function() {
         meni.classList.remove("hidden");
     }
     const stolovi = document.getElementById("stolovi");
-    if(!stolovi.classList.contains("hidden")) {
-        stolovi.classList.add("hidden");
-    }
+   stolovi.style.display = "none";
     const rezervacije = document.getElementById
 ("rezervacije");
     if(!rezervacije.classList.contains("hidden")) {
@@ -90,9 +86,7 @@ document.getElementById("rezervacijebtn").addEventListener("click", function() {
         meni.classList.add("hidden");
     }
     const stolovi = document.getElementById("stolovi");
-    if(!stolovi.classList.contains("hidden")) {
-        stolovi.classList.add("hidden");
-    }
+    stolovi.style.display = "none";
     const podesavanja = document.getElementById("podesavanja");
     if(!podesavanja.classList.contains("hidden")) {
         podesavanja.classList.add("hidden");
@@ -114,9 +108,8 @@ document.getElementById("podesavanjabtn").addEventListener("click", function() {
         rezervacije.classList.add("hidden");
     }
     const stolovi = document.getElementById("stolovi");
-    if(!stolovi.classList.contains("hidden")) {
-        stolovi.classList.add("hidden");
-    }
+    stolovi.style.display = "none";
+    
 });
 document.getElementById("user").addEventListener("click", function() {
     const usermenu = document.getElementById("change-user-container");
@@ -133,6 +126,21 @@ document.getElementById("change-user-button").addEventListener("click", function
     //console.log(currentUser.name);
     
 });
+document.getElementById("dialog-container").addEventListener("click", function (event) {
+    const dialogBox = document.getElementById("dialog-box");
+    if (!dialogBox.contains(event.target)) {
+        closeDiag();
+    }
+});
+const dialog = document.getElementById("dialog-container");
+const dialogcontent = document.getElementById("dialog-content");
+function closeDiag() {
+    dialog.style.display = "none";
+}
+function openDiag(content) {
+    dialogcontent.innerHTML = content;
+    dialog.style.display = "flex";
+};
 
 function renderTables() {
     floorPlan.innerHTML = "";
@@ -150,18 +158,29 @@ function renderTables() {
           content += `</ul>`;
         } else {
           content += `<p><strong>Upcoming Reservations:</strong></p><ul>`;
-          if (table.reservations.length === 0) {
+          if (table.rezervacije.length === 0) {
             content += `<li>No reservations</li>`;
           } else {
-            table.reservations.forEach(res => {
-              content += `<li>${res}</li>`;
+            table.rezervacije.forEach(res => {
+              content += `<li>${res.imeKlijenta} - ${res.datum.toLocaleString('en-GB')}</li>`;
             });
           }
-          content += `</ul><button onclick="alert('Customer seated at table ${table.id}')">Seat Someone</button>`;
+          content += `</ul><button onclick="zapocniracun(${table.id})">Zapocni racun</button>`;
+         
         }
-        openModal(content);
+        content += `<button onclick="dodajhranu()">Dodaj stavke</button>`;
+        content += `<button onclick="printRacun()">Odstampaj racun</button>`;
+        openDiag(content);
       };
       floorPlan.appendChild(div);
 }});
   }
+  function zapocniracun(idStola) {
+    const table = tables.find(t => t.id === idStola);
+        table.occupied = true;
+        table.serverID = currentUser.id;
+        renderTables();
+        closeDiag();
+        dodajhranu(idStola);
+    }
   renderTables();
