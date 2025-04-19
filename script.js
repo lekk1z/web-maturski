@@ -2,73 +2,73 @@ let meni = [
   {
     id: 0,
     name: "Kafa",
-    idkategorije: 0,
+    idkategorije: "Topli napici",
     cena: 100,
   },
   {
     id: 1,
     name: "Caj",
-    idkategorije: 0,
+    idkategorije: "Topli napici",
     cena: 80,
   },
   {
     id: 2,
     name: "Cokolada",
-    idkategorije: 0,
+    idkategorije: "Topli napici",
     cena: 120,
   },
   {
     id: 3,
     name: "Coca-cola",
-    idkategorije: 1,
+    idkategorije: "Hladna pica",
     cena: 100,
   },
   {
     id: 4,
     name: "Fanta",
-    idkategorije: 1,
+    idkategorije: "Hladna pica",
     cena: 100,
   },
   {
     id: 5,
     name: "Sprite",
-    idkategorije: 1,
+    idkategorije: "Hladna pica",
     cena: 100,
   },
   {
     id: 6,
     name: "Pomfrit",
-    idkategorije: 2,
+    idkategorije: "Fast Food",
     cena: 150,
   },
   {
     id: 7,
     name: "Pica",
-    idkategorije: 2,
+    idkategorije: "Fast Food",
     cena: 300,
   },
   {
     id: 8,
     name: "Hamburger",
-    idkategorije: 2,
+    idkategorije: "Fast Food",
     cena: 350,
   },
   {
     id: 9,
     name: "Torta",
-    idkategorije: 3,
+    idkategorije: "Dezert",
     cena: 200,
   },
   {
     id: 10,
     name: "Kolac",
-    idkategorije: 3,
+    idkategorije: "Dezert",
     cena: 150,
   },
   {
     id: 11,
     name: "Sladoled",
-    idkategorije: 3,
+    idkategorije: "Dezert",
     cena: 120,
   },
 ];
@@ -137,6 +137,7 @@ let tables = [
   },
 ];
 const floorPlan = document.getElementById("stolovi");
+const editFloorPlan = document.getElementById("editFloorPlan");
 document.getElementById("hamburger").addEventListener("click", function () {
   const navMenu = document.getElementById("nav-menu");
   navMenu.classList.toggle("hidden");
@@ -231,7 +232,7 @@ document
     renderTables();
     //console.log(currentUser.name);
   });
-document
+/*document
   .getElementById("dialog-container")
   .addEventListener("click", function (event) {
     const dialogBox = document.getElementById("dialog-box");
@@ -239,23 +240,31 @@ document
       closeDiag();
     }
   });
+*/
+document
+  .getElementById("dialog-box")
+  .addEventListener("click", function (event) {
+    event.stopPropagation();
+  });
 const dialog = document.getElementById("dialog-container");
 const dialogcontent = document.getElementById("dialog-content");
 function closeDiag() {
   dialog.style.display = "none";
+  dialogcontent.innerHTML = "";
 }
+
 function openDiag(content) {
   dialogcontent.innerHTML = content;
   dialog.style.display = "flex";
 }
 function ukupnaCena(idStola) {
-    const table = tables.find((t) => t.id === idStola);
-    let total = 0;
-    table.orders.forEach((item) => {
-        let meniItem = meni.find((m) => m.id === item.id);
-        total += item.kolicina * meniItem.cena;
-    });
-    return total;
+  const table = tables.find((t) => t.id === idStola);
+  let total = 0;
+  table.orders.forEach((item) => {
+    let meniItem = meni.find((m) => m.id === item.id);
+    total += item.kolicina * meniItem.cena;
+  });
+  return total;
 }
 
 function renderTables() {
@@ -265,40 +274,112 @@ function renderTables() {
       const div = document.createElement("div");
       div.className = "table" + (table.occupied ? " occupied" : "");
       div.innerText = `Table ${table.id}`;
-      div.onclick = () => {
-        let content = `<h2>Table ${table.id}</h2>`;
-        if (table.occupied) {
-          content += `<p><strong>Current Orders:</strong></p><ul>`;
-          table.orders.sort();
-          table.orders.forEach((item) => {
-            let meniItem = meni.find((m) => m.id === item.id);
-            content += `<li>${item.kolicina} x ${meniItem.name} (${meniItem.cena}RSD) <span class='right-side'>${item.kolicina*meniItem.cena}RSD</li>`;
-          });
-          content += `</ul>`;
-          content += `<h3>Racun: <span class="right-side">${ukupnaCena(table.id)}RSD</span></h3>`;
-        }
-        content += `<p><strong>Upcoming Reservations:</strong></p><ul>`;
-        if (table.rezervacije.length === 0) {
-          content += `<li>No reservations</li>`;
-        } else {
-          table.rezervacije.forEach((res) => {
-            content += `<li>${res.imeKlijenta} - ${res.datum.toLocaleString(
-              "en-GB"
-            )}</li>`;
-          });
-        }
-        content += `</ul>`;
-        if (!table.occupied) {
-          content += `</ul><button onclick="zapocniracun(${table.id})">Zapocni racun</button>`;
-        } else {
-          content += `<button onclick="dodajhranu()">Dodaj stavke</button>`;
-          content += `<button onclick="printRacun(${table.id})">Odstampaj racun</button>`;
-        }
-        openDiag(content);
-      };
+      div.onclick = () => renderSingleTable(table.id);
       floorPlan.appendChild(div);
     }
   });
+}
+function renderSingleTable(tableid) {
+  {
+    let table = tables.find((t) => t.id === tableid);
+    let content = `<h2>Table ${table.id}</h2>`;
+    if (table.occupied) {
+      content += `<p><strong>Porudzbina:</strong></p><ul>`;
+      table.orders.sort();
+      table.orders.forEach((item) => {
+        let meniItem = meni.find((m) => m.id === item.id);
+        content += `<li>${item.kolicina} x ${meniItem.name} (${
+          meniItem.cena
+        }RSD) <span class='right-side'>${
+          item.kolicina * meniItem.cena
+        }RSD</li>`;
+      });
+      content += `</ul>`;
+      content += `<h3>Racun: <span class="right-side">${ukupnaCena(
+        table.id
+      )}RSD</span></h3>`;
+    }
+    content += `<p><strong>Rezervacije:</strong></p><ul>`;
+    if (table.rezervacije.length === 0) {
+      content += `<li>No reservations</li>`;
+    } else {
+      table.rezervacije.forEach((res) => {
+        content += `<li>${res.imeKlijenta} - ${res.datum.toLocaleString(
+          "en-GB"
+        )}</li>`;
+      });
+    }
+    content += `</ul>`;
+    if (!table.occupied) {
+      content += `<button onclick="zapocniracun(${table.id})">Zapocni racun</button>`;
+    } else {
+      content += `<button onclick="dodajhranu(${table.id})">Dodaj stavke</button>`;
+      content += `<button onclick="printRacun(${table.id})">Odstampaj racun</button>`;
+    }
+    openDiag(content);
+  }
+}
+function dodajhranu(idStola) {
+  let table = tables.find((t) => t.id === idStola);
+  let content = `<div><h2>Dodaj stavku</h2><div id="meni"></div>`;
+  const meniContainer = document.createElement("div");
+  meniContainer.className = "meni-container";
+
+  const groupedMeni = meni.reduce((acc, item) => {
+    if (!acc[item.idkategorije]) {
+      acc[item.idkategorije] = [];
+    }
+    acc[item.idkategorije].push(item);
+    return acc;
+  }, {});
+
+  Object.keys(groupedMeni).forEach((categoryId) => {
+    const categoryDiv = document.createElement("div");
+    categoryDiv.className = "meni-category";
+    categoryDiv.innerHTML = `<h3>${categoryId}</h3>`;
+    groupedMeni[categoryId].forEach((item) => {
+      const itemDiv = document.createElement("div");
+      itemDiv.className = "meni-item";
+      const order = table.orders.find((o) => o.id === item.id) || {
+        kolicina: 0,
+      };
+      itemDiv.innerHTML = `
+                <span>${item.name} (${item.cena}RSD)</span>
+                <button onclick="dodajStavku(${item.id}, ${idStola})">+</button>
+                <span id="kolicina-${item.id}-${idStola}">${order.kolicina}</span>
+                <button id='minusbtn' onclick="oduzmiStavku(${item.id}, ${idStola})">-</button>
+            `;
+      categoryDiv.appendChild(itemDiv);
+    });
+    meniContainer.appendChild(categoryDiv);
+  });
+
+  content += meniContainer.outerHTML;
+  content += `<button id="closebtn" onclick="renderSingleTable(${idStola})">OK</button>`;
+  openDiag(content);
+}
+function dodajStavku(idHrane, idStola) {
+  const table = tables.find((t) => t.id === idStola);
+  if (!table.orders.find((o) => o.id === idHrane)) {
+    table.orders.push({ id: idHrane, kolicina: 1 });
+  } else table.orders.find((o) => o.id === idHrane).kolicina++;
+  dodajhranu(idStola);
+}
+function oduzmiStavku(idHrane, idStola) {
+  const table = tables.find((t) => t.id === idStola);
+  if (
+    table.orders.find((o) => o.id === idHrane) &&
+    table.orders.find((o) => o.id === idHrane).kolicina > 0
+  ) {
+    table.orders.find((o) => o.id === idHrane).kolicina--;
+  } else {
+    const minusbtn = document.getElementById("minusbtn");
+    console.log(meni.find((m) => m.id === idHrane).name);
+    minusbtn.disabled = true;
+    minusbtn.style.cursor = "not-allowed";
+    // dodajhranu(idStola);
+  }
+  dodajhranu(idStola);
 }
 function zapocniracun(idStola) {
   const table = tables.find((t) => t.id === idStola);
@@ -314,5 +395,79 @@ function printRacun(idStola) {
   renderTables();
   closeDiag();
 }
-
 renderTables();
+renderMeni();
+function renderMeni() {
+  const meniContainer = document.getElementById("meni");
+  meniContainer.innerHTML = "";
+
+  const groupedMeni = meni.reduce((acc, item) => {
+    if (!acc[item.idkategorije]) {
+      acc[item.idkategorije] = [];
+    }
+    acc[item.idkategorije].push(item);
+    return acc;
+  }, {});
+
+  Object.keys(groupedMeni).forEach((categoryId) => {
+    const categoryDiv = document.createElement("div");
+    categoryDiv.className = "meni-category";
+    categoryDiv.innerHTML = `<h3>${categoryId}</h3>`;
+    groupedMeni[categoryId].forEach((item) => {
+      const div = document.createElement("div");
+      div.className = "meni-item";
+      div.innerHTML = `
+  <span class="item-name">${item.name}</span> 
+  <span class="item-price">${item.cena}RSD</span>
+`;
+      categoryDiv.appendChild(div);
+    });
+    categoryDiv.innerHTML += "<hr>";
+    meniContainer.appendChild(categoryDiv);
+  });
+}
+function renderEditableTables() {
+  editFloorPlan.innerHTML = "";
+  tables.forEach((table, index) => {
+    const div = document.createElement("div");
+    div.className = "table draggable";
+    div.innerText = `Table ${table.id}`;
+    div.title = "Drag to move | Click to remove";
+    div.draggable = true;
+    div.ondragstart = (e) => {
+      e.dataTransfer.setData("text/plain", index);
+    };
+    div.ondragover = (e) => {
+      e.preventDefault();
+    };
+    div.ondrop = (e) => {
+      e.preventDefault();
+      const fromIndex = e.dataTransfer.getData("text/plain");
+      const toIndex = index;
+      const dragged = tables[fromIndex];
+      tables.splice(fromIndex, 1);
+      tables.splice(toIndex, 0, dragged);
+      renderEditableTables();
+    };
+    div.onclick = () => {
+      if (confirm(`Remove Table ${table.id}?`)) {
+        tables.splice(index, 1);
+        renderEditableTables();
+      }
+    };
+    editFloorPlan.appendChild(div);
+  });
+}
+renderEditableTables();
+function addTable() {
+  const newId = tables.length ? Math.max(...tables.map((t) => t.id)) + 1 : 1;
+  const serverOptions = users
+    .map((user) => `${user.id}: ${user.name}`)
+    .join("\n");
+  const serverIDthis = parseInt(
+    prompt(`Select the server for the new table:\n${serverOptions}`),
+    10
+  );
+  tables.push({ id: newId,serverID:serverIDthis, orders:[],occupied: false, rezervacije: [] });
+  renderEditableTables();
+}
