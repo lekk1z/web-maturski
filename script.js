@@ -229,7 +229,6 @@ document
     currentUser = users.find((user) => user.name === userText);
     user.textContent = "Zdravo, " + currentUser.name + "!";
     renderTables();
-    //console.log(currentUser.name);
   });
 document
   .getElementById("dialog-container")
@@ -272,7 +271,7 @@ function renderTables() {
           table.orders.sort();
           table.orders.forEach((item) => {
             let meniItem = meni.find((m) => m.id === item.id);
-            content += `<li>${item.kolicina} x ${meniItem.name} (${meniItem.cena}RSD) <span class='right-side'>${item.kolicina*meniItem.cena}RSD</li>`;
+            content += `<li>${item.kolicina} x ${meniItem.name} (${meniItem.cena}RSD)<span class='right-side'>${item.kolicina*meniItem.cena}RSD</li>`;
           });
           content += `</ul>`;
           content += `<h3>Racun: <span class="right-side">${ukupnaCena(table.id)}RSD</span></h3>`;
