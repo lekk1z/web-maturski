@@ -1,51 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
-    
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="./style.css">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./style.css" />
     <title>Restaurant managment</title>
-</head>
-<body>
-<div class="topbar">
-    <h1>Restoran Pita</h1>
-    <h2 id="user">Zdravo, Marko!</h2>
-    <div class="menu-container">
+  </head>
+  <body>
+    <div class="topbar">
+      <h1>Restoran Pita</h1>
+      <h2 id="user">Zdravo, Marko!</h2>
+      <div class="menu-container">
         <button class="hamburger" id="hamburger">&#9776;</button>
-    <nav id="nav-menu" class="hidden">
-        <ul>
-            <li id="pocetnabtn" >Pocetna</li>
-            <li id="menibtn" >Meni</li>
-            <li id="rezervacijebtn" >Rezervacije</li>
-            <li class='no-divider' id="podesavanjabtn" >Podesavanja</li>
-        </ul>
-    </nav>
+        <nav id="nav-menu" class="hidden">
+          <ul>
+            <li id="pocetnabtn">Pocetna</li>
+            <li id="menibtn">Meni</li>
+            <li id="rezervacijebtn">Rezervacije</li>
+            <li class="no-divider" id="podesavanjabtn">Podesavanja</li>
+          </ul>
+        </nav>
+      </div>
     </div>
-</div>
-<div class="dialog-container" id="dialog-container">
-    <div class="dialog-box" id="dialog-box">
-        
-            <button id="close-dialog" class="close-dialog" onclick="closeDiag()">X</button>
-            <div class="dialog-content" id="dialog-content"></div>
-</div>
-</div>
-<div class="hidden change-user-container" id="change-user-container">
-    <div class="change-user-box">
+    <div class="dialog-container" id="dialog-container">
+      <div class="dialog-box" id="dialog-box">
+        <button id="close-dialog" class="close-dialog" onclick="closeDiag()">
+          X
+        </button>
+        <div class="dialog-content" id="dialog-content"></div>
+      </div>
+    </div>
+    <div class="hidden change-user-container" id="change-user-container">
+      <div class="change-user-box">
         <h2>Izaberi korisnika</h2>
-       <select id="user-select" class="user-select">
-            <option value="Marko">Marko</option>
-            <option value="Ana">Ana</option>
-            <option value="Petar">Petar</option>
+        <select id="user-select" class="user-select">
+          <option value="Marko">Marko</option>
+          <option value="Ana">Ana</option>
+          <option value="Petar">Petar</option>
         </select>
         <button id="change-user-button">Izaberi</button>
+      </div>
     </div>
-
-</div>
-<div id="stolovi" class="stolovi"></div>
-<div id="meni" class="hidden">Meni Content</div>
-<div id="rezervacije" class="hidden">Rezervacije Content</div>
-<div id="podesavanja" class="hidden">Podesavanja Content</div>
-<script src='./script.js'></script>
-</body>
+    <div id="stolovi" class="stolovi"></div>
+    <div id="meni" class="hidden">Meni Content</div>
+    <div id="rezervacije" class="hidden">Rezervacije Content</div>
+    <div id="podesavanja" class="hidden">Podesavanja Content</div>
+    <script src="./script.js"></script>
+  </body>
 </html>
