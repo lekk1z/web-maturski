@@ -308,7 +308,7 @@ function renderSingleTable(tableid) {
           "en-GB"
         )}</li>`;
       });
-    }
+    } 
     content += `</ul>`;
     if (!table.occupied) {
       content += `<button onclick="zapocniracun(${table.id})">Zapocni racun</button>`;
