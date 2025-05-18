@@ -8,7 +8,7 @@ const error = ref(null)
 async function fetchTables() {
   loading.value = true
   try {
-    const res = await fetch('http://localhost:8080/tables')
+    const res = await fetch('http://localhost:8080/api/tables')
     if (!res.ok) throw new Error('Greska pri preuzimanju stolova')
     tables.value = await res.json()
     error.value = null
@@ -31,7 +31,7 @@ onMounted(fetchTables)
       <div v-if="tables.length === 0">Nema stolova.</div>
       <div class="tables-list">
         <div v-for="table in tables" :key="table.id" class="table-card">
-          <h3>Sto #{{ table.id }}</h3>
+          <h3>Sto #{{ table.number }}</h3>
           <p>Status: {{ table.status }}</p>
           <p>Broj mesta: {{ table.seats }}</p>
         </div>
