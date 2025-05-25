@@ -7,19 +7,24 @@ import Rezervacije from "@/components/Rezervacije.vue"
 import Podesavanja from "@/components/Podesavanja.vue"
 
 const selectedItem = ref("Stolovi")
+const user = ref("Marko")
 
 function handleSelect(item) {
   selectedItem.value = item
 }
+
+function handleUserChange(newUser) {
+  user.value = newUser
+}
 </script>
 
 <template>
-  <Navbar @select="handleSelect" />
+  <Navbar :user="user" @select="handleSelect" @user-change="handleUserChange" />
   <Stolovi v-if="selectedItem === 'Stolovi'" />
   <Meni v-if="selectedItem === 'Meni'" />
   <Rezervacije v-if="selectedItem === 'Rezervacije'" />
   <Podesavanja v-if="selectedItem === 'Podesavanja'" />
   <div>
-    Izabrana stavka: {{ selectedItem }}
+    <p>Ulogovan korsisnik: {{user}}</p>
   </div>
 </template>

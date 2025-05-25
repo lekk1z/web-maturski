@@ -1,27 +1,131 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, watch } from 'vue';
+
+const props = defineProps({
+  user: Object
+});
+const emit = defineEmits(['select', 'user-change']);
+
 const vidljivost = ref(false)
-const iconica=ref('☰');
-const promenividljivost=()=>{
-  vidljivost.value= !vidljivost.value;
-  if(vidljivost.value){
-    iconica.value='✖'; 
-  }
-  else{
-    iconica.value='☰';
-  }
+const iconica = ref('☰');
+const promenividljivost = () => {
+  vidljivost.value = !vidljivost.value;
+  iconica.value = vidljivost.value ? '✖' : '☰';
 }
-const emit = defineEmits(['select']);
 function selectItem(item) {
   emit('select', item)
   promenividljivost();
 }
-const user=ref("Marko");
+
+// Users API logic
+const users = ref([]);
+const usersLoading = ref(false);
+const usersError = ref(null);
+
+async function fetchUsers() {
+  usersLoading.value = true;
+  usersError.value = null;
+  try {
+    const res = await fetch('http://localhost:8080/api/users');
+    if (!res.ok) throw new Error('Greška pri preuzimanju korisnika');
+    users.value = await res.json();
+  } catch (e) {
+    usersError.value = e.message;
+  } finally {
+    usersLoading.value = false;
+  }
+}
+
+onMounted(fetchUsers);
+
+// Selected user for dropdown
+const selectedUser = ref(null);
+
+watch(
+  () => props.user,
+  (newUser) => {
+    // Find the user object by name if possible
+    const found = users.value.find(u => u.name === newUser);
+    selectedUser.value = found || null;
+  },
+  { immediate: true }
+);
+
+function promeniUser() {
+  toggleChangeUser();
+  // Try to set selectedUser to the current user object
+  const found = users.value.find(u => u.name === props.user.name);
+  selectedUser.value = found || null;
+}
+
+async function confirmUserChange() {
+  // If "Dodaj korisnika..." is selected
+  if (selectedUser.value === 'add_new') {
+    const newName = prompt("Unesite ime novog korisnika:");
+    if (newName && newName.trim()) {
+      try {
+        usersLoading.value = true;
+        const res = await fetch('http://localhost:8080/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName.trim(),
+                                 tableIds:[]
+           })
+        });
+        if (!res.ok) throw new Error('Greška pri dodavanju korisnika');
+        await fetchUsers();
+        // Set the new user as selected and emit change
+        const added = users.value.find(u => u.name === newName.trim());
+        if (added) {
+          emit('user-change', added);
+        }
+      } catch (e) {
+        alert(e.message || 'Greška pri dodavanju korisnika');
+      } finally {
+        usersLoading.value = false;
+        toggleChangeUser();
+      }
+    } else {
+      // If user cancels or enters empty name, just close dialog
+      toggleChangeUser();
+    }
+    return;
+  }
+  // Regular user selection
+  if (selectedUser.value && selectedUser.value.name !== props.user) {
+    emit('user-change', selectedUser.value);
+  }
+  toggleChangeUser();
+}
+
+const vidljivostChangeUser = ref(false);
+function toggleChangeUser() {
+  vidljivostChangeUser.value = !vidljivostChangeUser.value;
+}
 </script>
 <template>
     <div class="topbar">
       <h1>Restoran Pita</h1>
-      <h2 id="user">Zdravo, {{user}}!</h2>
+      <h2 id="user" class="centered-user" @click="promeniUser">Zdravo, {{user.name}}!</h2>
+
+      <div class="change-user-container" id="change-user-container" v-if="vidljivostChangeUser">
+        <div class="change-user-box">
+          <h2>Izaberi korisnika</h2>
+          <div v-if="usersLoading">Učitavanje korisnika...</div>
+          <div v-else-if="usersError" style="color:red;">{{ usersError }}</div>
+          <select
+            v-else
+            id="user-select"
+            class="user-select"
+            v-model="selectedUser"
+          >
+            <option v-for="u in users" :key="u.name" :value="u">{{ u.name }}</option>
+            <option :value="'add_new'">Dodaj korisnika...</option>
+          </select>
+          <button id="change-user-button" @click="confirmUserChange" :disabled="usersLoading || usersError">Izaberi</button>
+        </div>
+      </div>
+
       <div class="menu-container">
         <button class="hamburger" id="hamburger" @click="promenividljivost">{{iconica}}</button>
         <nav v-if="vidljivost">
@@ -50,6 +154,20 @@ const user=ref("Marko");
   background-color: rgb(171, 238, 171);
   border: 10px solid rgb(171, 238, 171);
   padding: 10px;
+  position: relative;
+}
+.centered-user {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  z-index: 1;
+}
+
+.centered-user:hover {
+  border: 3px solid grey;
+  padding: 5px;
+  border-radius: 7px;
 }
 .hamburger {
   font-size:30px;
@@ -83,5 +201,26 @@ nav ul a::before {
 }
 .no-divider {
   border-bottom: 0;
+}
+.change-user-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.4);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.change-user-box {
+  background: #fff;
+  padding: 2rem 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+  min-width: 280px;
+  text-align: center;
 }
 </style>
