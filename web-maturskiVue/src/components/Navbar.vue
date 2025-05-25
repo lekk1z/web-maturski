@@ -26,7 +26,7 @@ const user=ref("Marko");
         <button class="hamburger" id="hamburger" @click="promenividljivost">{{iconica}}</button>
         <nav v-if="vidljivost">
           <ul>
-            <li id="pocetnabtn" @click="selectItem('Pocetna')">Pocetna</li>
+            <li id="pocetnabtn" @click="selectItem('Stolovi')">Pocetna</li>
             <li id="menibtn" @click="selectItem('Meni')">Meni</li>
             <li id="rezervacijebtn" @click="selectItem('Rezervacije')">Rezervacije</li>
             <li class="no-divider" id="podesavanjabtn" @click="selectItem('Podesavanja')">Podesavanja</li>
