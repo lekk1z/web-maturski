@@ -287,12 +287,14 @@ function renderSingleTable(tableid) {
       content += `<p><strong>Porudzbina:</strong></p><ul>`;
       table.orders.sort();
       table.orders.forEach((item) => {
+        if(item.kolicina>0){
         let meniItem = meni.find((m) => m.id === item.id);
         content += `<li>${item.kolicina} x ${meniItem.name} (${
           meniItem.cena
         }RSD) <span class='right-side'>${
           item.kolicina * meniItem.cena
         }RSD</li>`;
+      }
       });
       content += `</ul>`;
       content += `<h3>Racun: <span class="right-side">${ukupnaCena(
