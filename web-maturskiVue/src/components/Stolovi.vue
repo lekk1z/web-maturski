@@ -1,6 +1,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 
+// Add this line to receive the user prop from App.vue
+const props = defineProps({
+  user: Object
+})
+
 const tables = ref([])
 const loading = ref(true)
 const error = ref(null)
@@ -8,13 +13,31 @@ const error = ref(null)
 const showPopup = ref(false)
 const selectedTable = ref(null)
 
+// Menu popup and items
+const showMenuPopup = ref(false)
+const menuItems = ref([])
+const menuLoading = ref(false)
+const menuError = ref(null)
+
+// Track selected items and their quantities for the order
+const selectedOrderItems = ref({}) // { menuId: { ...item, quantity } }
+
+// Store all orders
+const orders = ref([])
+
 async function fetchTables() {
   loading.value = true
   try {
+    // Fetch tables
     const res = await fetch('http://localhost:8080/api/tables')
     if (!res.ok) throw new Error('Greska pri preuzimanju stolova')
     tables.value = await res.json()
     error.value = null
+
+    // Fetch all orders
+    const ordersRes = await fetch('http://localhost:8080/api/orders')
+    if (!ordersRes.ok) throw new Error('Greška pri preuzimanju porudžbina')
+    orders.value = await ordersRes.json()
   } catch (e) {
     error.value = e.message
   } finally {
@@ -33,33 +56,237 @@ function closePopup() {
   selectedTable.value = null
 }
 
-function seatSomeone() {
-  if (!selectedTable.value) return;
-  // Locally update the table as occupied
-  selectedTable.value.occupied = true;
-  // Update in the tables array as well
-  const idx = tables.value.findIndex(t => t.id === selectedTable.value.id);
-  if (idx !== -1) tables.value[idx].occupied = true;
+// Fetch menu items when opening menu popup
+async function openMenuPopup() {
+  menuLoading.value = true
+  showMenuPopup.value = true
+  selectedOrderItems.value = {} // Reset selection each time
+  try {
+    const res = await fetch('http://localhost:8080/api/menu')
+    if (!res.ok) throw new Error('Greška pri preuzimanju menija')
+    menuItems.value = await res.json()
+    menuError.value = null
+  } catch (e) {
+    menuError.value = e.message
+  } finally {
+    menuLoading.value = false
+  }
+}
 
-  // Update the API
+function closeMenuPopup() {
+  showMenuPopup.value = false
+}
+
+// Add item to order (increase quantity)
+function addItemToOrder(item) {
+  const id = item.id
+  if (!selectedOrderItems.value[id]) {
+    selectedOrderItems.value[id] = { ...item, quantity: 1 }
+  } else {
+    selectedOrderItems.value[id].quantity += 1
+  }
+}
+
+// Remove item or decrease quantity
+function removeItemFromOrder(item) {
+  const id = item.id
+  if (selectedOrderItems.value[id]) {
+    if (selectedOrderItems.value[id].quantity > 1) {
+      selectedOrderItems.value[id].quantity -= 1
+    } else {
+      delete selectedOrderItems.value[id]
+    }
+  }
+}
+
+// Confirm order: send to API, update table with new orderId
+async function confirmOrder() {
+  if (!selectedTable.value) return
+  const orderItems = Object.values(selectedOrderItems.value)
+    .filter(i => i.quantity > 0)
+    .map(i => ({
+      menuItemId: i.id,
+      quantity: i.quantity
+    }))
+  if (orderItems.length === 0) {
+    closeMenuPopup()
+    return
+  }
+  try {
+    // 1. Create the order
+    const orderRes = await fetch('http://localhost:8080/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tableId: selectedTable.value.id,
+        items: orderItems
+      })
+    })
+    if (!orderRes.ok) throw new Error('Greška pri slanju porudžbine')
+    const order = await orderRes.json()
+
+    // 2. Update the table with the new order ID
+    const updatedOrdersId = Array.isArray(selectedTable.value.ordersId)
+      ? [...selectedTable.value.ordersId, order.id]
+      : [order.id];
+
+    await fetch(`http://localhost:8080/api/tables/${selectedTable.value.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...selectedTable.value,
+        ordersId: updatedOrdersId
+      })
+    })
+
+    // Refetch tables and orders
+    await fetchTables()
+
+    // Force popup to close and reopen for the same table to re-render with fresh data
+    const tableId = selectedTable.value.id
+    closePopup()
+    // Wait for next tick to ensure DOM updates
+    setTimeout(() => {
+      izmeniSto(tableId)
+    }, 0)
+  } catch (e) {
+    alert(e.message || 'Greška pri slanju porudžbine')
+  } finally {
+    closeMenuPopup()
+  }
+}
+
+// Table occupancy
+function changeTableoccupancy(occupiedBool) {
+  if (!selectedTable.value) return;
+  selectedTable.value.occupied = occupiedBool;
+  const idx = tables.value.findIndex(t => t.id === selectedTable.value.id);
+  if (idx !== -1) tables.value[idx].occupied = occupiedBool;
+
   fetch(`http://localhost:8080/api/tables/${selectedTable.value.id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...selectedTable.value, occupied: true })
+    body: JSON.stringify({ ...selectedTable.value, occupied: occupiedBool })
   })
     .then(res => {
       if (!res.ok) throw new Error('Greška pri ažuriranju stola');
       return res.json();
-    })
-    .then(() => {
-      
     })
     .catch(e => {
       alert(e.message || 'Greška pri ažuriranju stola');
     });
 }
 
-onMounted(fetchTables)
+// Menu category mapping and grouping
+const CATEGORY_MAP = {
+  1: 'Predjela',
+  2: 'Glavna jela',
+  3: 'Dezerti',
+  4: 'Pića',
+  // Dodaj još po potrebi
+}
+
+function groupMenuByCategory(items) {
+  return items.reduce((acc, item) => {
+    const catNum = item.categoryId || 0
+    const catName = CATEGORY_MAP[catNum] || `Kategorija ${catNum}`
+    if (!acc[catName]) acc[catName] = []
+    acc[catName].push(item)
+    return acc
+  }, {})
+}
+
+function getTableOrders(table) {
+  // If table.orderId is a single value
+  if (table.orderId) {
+    return orders.value.filter(o => o.id === table.orderId)
+  }
+  // If table.ordersId is an array of ids
+  if (Array.isArray(table.ordersId)) {
+    return orders.value.filter(o => table.ordersId.includes(o.id))
+  }
+  return []
+}
+
+// Returns a list of unique ordered items for a given table, with their total quantities.
+// This aggregates all items from all orders for the table, so each menu item appears only once with summed quantity.
+function getUniqueOrderedItems(table) {
+  const ordersForTable = getTableOrders(table)
+  const itemMap = {}
+  ordersForTable.forEach(order => {
+    (order.items || []).forEach(item => {
+      const id = item.menuItemId
+      // Try to match both as numbers and as strings
+      const menuItem = menuItems.value.find(m => String(m.id) === String(id))
+      if (!itemMap[id]) {
+        itemMap[id] = {
+          menuItemId: id,
+          name: menuItem ? menuItem.name : (item.name || 'Nepoznato'),
+          quantity: item.quantity
+        }
+      } else {
+        itemMap[id].quantity += item.quantity
+      }
+    })
+  })
+  return Object.values(itemMap)
+}
+
+function itemPrice(item) {
+  // Try to get price from menuItems, fallback to item.price or 0
+  const menuItem = menuItems.value.find(m => String(m.id) === String(item.menuItemId))
+  return menuItem ? menuItem.price : (item.price || 0)
+}
+function itemTotal(item) {
+  return itemPrice(item) * item.quantity
+}
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    // Fetch tables
+    const res = await fetch('http://localhost:8080/api/tables')
+    if (!res.ok) throw new Error('Greska pri preuzimanju stolova')
+    tables.value = await res.json()
+    error.value = null
+
+    // Fetch all orders
+    const ordersRes = await fetch('http://localhost:8080/api/orders')
+    if (!ordersRes.ok) throw new Error('Greška pri preuzimanju porudžbina')
+    orders.value = await ordersRes.json()
+
+    // Fetch menu items
+    const menuRes = await fetch('http://localhost:8080/api/menu')
+    if (!menuRes.ok) throw new Error('Greška pri preuzimanju menija')
+    menuItems.value = await menuRes.json()
+    menuError.value = null
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+})
+
+async function printBillAndClearTable() {
+  if (!selectedTable.value) return;
+  try {
+    // Clear ordersId and set occupied to false
+    await fetch(`http://localhost:8080/api/tables/${selectedTable.value.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...selectedTable.value,
+        ordersId: [],
+        occupied: false
+      })
+    });
+    // Optionally, refetch tables/orders and close popup
+    await fetchTables();
+    closePopup();
+  } catch (e) {
+    alert(e.message || 'Greška pri štampanju računa i oslobađanju stola');
+  }
+}
 </script>
 
 <template>
@@ -70,7 +297,13 @@ onMounted(fetchTables)
     <div v-else>
       <div v-if="tables.length === 0">Nema stolova.</div>
       <div class="tables-list">
-        <div v-for="table in tables" :key="table.id" class="table-card" @click="izmeniSto(table.id)">
+        <div
+          v-for="table in tables.filter(t => Array.isArray(props.user?.tableIds) ? props.user.tableIds.includes(t.id) : true)"
+          :key="table.id"
+          class="table-card"
+          :class="{ occupied: table.occupied }"
+          @click="izmeniSto(table.id)"
+        >
           <h3>Sto #{{ table.number }}</h3>
           <p>Status: {{ table.occupied ? 'Zauzet' : 'Slobodan' }}</p>
         </div>
@@ -84,13 +317,65 @@ onMounted(fetchTables)
         <p>Status: {{ selectedTable.occupied ? 'Zauzet' : 'Slobodan' }}</p>
         <h4>Poručene stavke:</h4>
         <ul>
-          <li v-if="!selectedTable.items || selectedTable.items.length === 0">Nema poručenih stavki.</li>
-          <li v-for="item in selectedTable.items" :key="item.id">
-            {{ item.name }} x{{ item.quantity }}
+          <li v-if="getTableOrders(selectedTable).length === 0">Nema poručenih stavki.</li>
+          <li
+            v-for="item in getUniqueOrderedItems(selectedTable)"
+            :key="item.menuItemId"
+            style="display: flex; justify-content: space-between; align-items: center;"
+          >
+            <span>
+              {{ item.name }}
+              x{{ item.quantity }}
+              <span style="color: #888; font-size: 0.95em;">
+                ({{ itemPrice(item) }} × {{ item.quantity }} = {{ itemTotal(item) }} EUR)
+              </span>
+            </span>
+          </li>
+          <li v-if="getUniqueOrderedItems(selectedTable).length > 0" style="margin-top: 8px; font-weight: bold; display: flex; justify-content: space-between;">
+            <span>Ukupno:</span>
+            <span>
+              {{
+                getUniqueOrderedItems(selectedTable)
+                  .reduce((sum, item) => sum + itemTotal(item), 0)
+              }} EUR
+            </span>
           </li>
         </ul>
-        <button @click="seatSomeone">Sedi korisnika</button>
-        <button @click="addItemToBill">Dodaj stavku na račun</button>
+
+        <button v-if="!selectedTable.occupied" @click="changeTableoccupancy(true)">Sedi korisnika</button>
+        <button v-else @click="printBillAndClearTable">Odstampaj racun</button>
+
+        <!-- Open menu popup on click -->
+        <button @click="openMenuPopup" v-if="selectedTable.occupied">Dodaj stavku na račun</button>
+      </div>
+    </div>
+
+    <!-- Menu popup -->
+    <div v-if="showMenuPopup" class="popup-overlay">
+      <div class="popup-box menu-popup-box">
+        <button class="close-btn" @click="closeMenuPopup">×</button>
+        <h3>Dodaj stavku</h3>
+        <div v-if="menuLoading">Učitavanje...</div>
+        <div v-else-if="menuError" style="color:red;">{{ menuError }}</div>
+        <div v-else class="menu-grid-scroll">
+          <template v-for="(items, category) in groupMenuByCategory(menuItems)" :key="category">
+            <div class="menu-category-divider">{{ category }}</div>
+            <div class="menu-grid">
+              <div v-for="item in items" :key="item.id" class="menu-grid-item">
+                <button id="no-color" @click="addItemToOrder(item)">
+                  {{ item.name }}<br>
+                  <span class="menu-price">{{ item.price }} EUR</span>
+                  <span v-if="selectedOrderItems[item.id]">x{{ selectedOrderItems[item.id].quantity }}</span>
+                </button>
+                <button v-if="selectedOrderItems[item.id]" @click="removeItemFromOrder(item)"
+                  style="margin-top:4px;font-size:0.9em;">-</button>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div style="margin-top: 18px; text-align: right;">
+          <button @click="confirmOrder" :disabled="Object.keys(selectedOrderItems).length === 0">OK</button>
+        </div>
       </div>
     </div>
   </div>
@@ -100,11 +385,13 @@ onMounted(fetchTables)
 .stolovi {
   padding: 20px;
 }
+
 .tables-list {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
 }
+
 .table-card {
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -114,26 +401,32 @@ onMounted(fetchTables)
   cursor: pointer;
   transition: box-shadow 0.2s;
 }
+
 .table-card:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
+
 .popup-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.4);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
 }
-.popup-box {
-  background: #fff;
-  padding: 2rem 2.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
-  min-width: 320px;
-  position: relative;
+
+.popup-box ul {
+  max-height: 600px;
+  /* Set a fixed height for scrolling */
+  overflow-y: auto;
+  /* Enable vertical scrollbar */
+  overflow-x: hidden;
 }
+
 .close-btn {
   position: absolute;
   top: 8px;
@@ -143,6 +436,7 @@ onMounted(fetchTables)
   font-size: 2rem;
   cursor: pointer;
 }
+
 .popup-box button {
   margin: 10px 8px 0 0;
   padding: 8px 16px;
@@ -153,8 +447,76 @@ onMounted(fetchTables)
   cursor: pointer;
   transition: background 0.2s;
 }
+
+#no-color {
+  background-color: #fff;
+}
+
 .popup-box button:hover {
   background: #7fd67f;
 }
-</style>
 
+.table-card.occupied {
+  background-color: lightcoral;
+}
+
+/* New styles for menu popup */
+.menu-grid-scroll {
+  max-height: 520px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.menu-category-divider {
+  font-weight: bold;
+  margin: 12px 0 4px;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.menu-grid-item {
+  background: #f0f8ff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  transition: transform 0.2s;
+}
+
+.menu-grid-item:hover {
+  transform: translateY(-2px);
+}
+
+.menu-price {
+  color: #333;
+  font-weight: bold;
+  display: block;
+  margin-top: 4px;
+  font-weight: bold;
+  color: #007bff;
+}
+
+/* Make the first (table) popup smaller */
+.popup-box {
+  background: #fff;
+  padding: 2rem 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.22);
+  position: relative;
+}
+
+/* Make the menu popup larger by targeting it specifically */
+.menu-popup-box {
+  min-width: 600px;
+  max-width: 900px;
+  min-height: 400px;
+  padding: 2.5rem 3.5rem;
+}
+</style>

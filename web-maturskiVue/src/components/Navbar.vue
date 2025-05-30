@@ -1,8 +1,10 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, watch } from 'vue';
 
 const props = defineProps({
-  user: Object
+  user: Object,
+  users: Array,
+  addUser: Function
 });
 const emit = defineEmits(['select', 'user-change']);
 
@@ -16,37 +18,13 @@ function selectItem(item) {
   emit('select', item)
   promenividljivost();
 }
-
-// Users API logic
-const users = ref([]);
-const usersLoading = ref(false);
-const usersError = ref(null);
-
-async function fetchUsers() {
-  usersLoading.value = true;
-  usersError.value = null;
-  try {
-    const res = await fetch('http://localhost:8080/api/users');
-    if (!res.ok) throw new Error('Greška pri preuzimanju korisnika');
-    users.value = await res.json();
-  } catch (e) {
-    usersError.value = e.message;
-  } finally {
-    usersLoading.value = false;
-  }
-}
-
-onMounted(fetchUsers);
-//onMounted(promeniUser);
-
-// Selected user for dropdown
 const selectedUser = ref(null);
 
 watch(
   () => props.user,
   (newUser) => {
     // Find the user object by name if possible
-    const found = users.value.find(u => u.name === newUser);
+    const found = props.users.find(u => u.name === (newUser?.name || newUser));
     selectedUser.value = found || null;
   },
   { immediate: true }
@@ -55,7 +33,7 @@ watch(
 function promeniUser() {
   toggleChangeUser();
   // Try to set selectedUser to the current user object
-  const found = users.value.find(u => u.name === props.user.name);
+  const found = props.users.find(u => u.name === props.user?.name);
   selectedUser.value = found || null;
 }
 
@@ -66,17 +44,7 @@ async function confirmUserChange() {
     if (newName && newName.trim()) {
       try {
         usersLoading.value = true;
-        const res = await fetch('http://localhost:8080/api/users', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newName.trim(),
-                                 tableIds:[]
-           })
-        });
-        if (!res.ok) throw new Error('Greška pri dodavanju korisnika');
-        await fetchUsers();
-        // Set the new user as selected and emit change
-        const added = users.value.find(u => u.name === newName.trim());
+        const added = await props.addUser(newName.trim());
         if (added) {
           emit('user-change', added);
         }
@@ -93,7 +61,7 @@ async function confirmUserChange() {
     return;
   }
   // Regular user selection
-  if (selectedUser.value && selectedUser.value.name !== props.user) {
+  if (selectedUser.value && selectedUser.value.name !== props.user?.name) {
     emit('user-change', selectedUser.value);
   }
   toggleChangeUser();
@@ -107,7 +75,7 @@ function toggleChangeUser() {
 <template>
     <div class="topbar">
       <h1>Restoran Pita</h1>
-      <h2 id="user" class="centered-user" @click="promeniUser">Zdravo, {{user.name}}!</h2>
+     <h2 id="user" class="centered-user" @click="promeniUser">Zdravo, {{props.user?.name}}!</h2>
 
       <div class="change-user-container" id="change-user-container" v-if="vidljivostChangeUser">
         <div class="change-user-box">

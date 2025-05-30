@@ -15,8 +15,13 @@ async function fetchUsers() {
     const res = await fetch('http://localhost:8080/api/users')
     if (!res.ok) throw new Error('Greška pri preuzimanju korisnika')
     users.value = await res.json()
-    // Set default user to the first user from API
-    if (users.value.length > 0) {
+    // Set default user from sessionStorage or first user
+    const storedUser = sessionStorage.getItem('user')
+    if (storedUser) {
+      const parsed = JSON.parse(storedUser)
+      const found = users.value.find(u => u.name === parsed.name)
+      user.value = found || users.value[0]
+    } else if (users.value.length > 0) {
       user.value = users.value[0]
     }
   } catch (e) {
@@ -25,19 +30,38 @@ async function fetchUsers() {
   }
 }
 
+async function addUser(newName) {
+  const res = await fetch('http://localhost:8080/api/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: newName, tableIds: [] })
+  })
+  if (!res.ok) throw new Error('Greška pri dodavanju korisnika')
+  await fetchUsers()
+  // Return the added user object
+  return users.value.find(u => u.name === newName)
+}
+
 function handleSelect(item) {
   selectedItem.value = item
 }
 
 function handleUserChange(newUser) {
   user.value = newUser
+  sessionStorage.setItem('user', JSON.stringify(newUser))
 }
 
 onMounted(fetchUsers)
 </script>
 
 <template>
-  <Navbar :user="user" @select="handleSelect" @user-change="handleUserChange" />
+  <Navbar
+    :user="user"
+    :users="users"
+    :addUser="addUser"
+    @select="handleSelect"
+    @user-change="handleUserChange"
+  />
   <Stolovi :user="user" v-if="selectedItem === 'Stolovi'" />
   <Meni v-if="selectedItem === 'Meni'" />
   <Rezervacije v-if="selectedItem === 'Rezervacije'" />
