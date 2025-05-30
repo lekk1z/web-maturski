@@ -37,6 +37,7 @@ async function fetchUsers() {
 }
 
 onMounted(fetchUsers);
+//onMounted(promeniUser);
 
 // Selected user for dropdown
 const selectedUser = ref(null);
