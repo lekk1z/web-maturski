@@ -25,6 +25,9 @@ const selectedOrderItems = ref({}) // { menuId: { ...item, quantity } }
 // Store all orders
 const orders = ref([])
 
+// Store all reservations
+const reservations = ref([])
+
 async function fetchTables() {
   loading.value = true
   try {
@@ -42,6 +45,16 @@ async function fetchTables() {
     error.value = e.message
   } finally {
     loading.value = false
+  }
+}
+
+async function fetchReservations() {
+  try {
+    const res = await fetch('http://localhost:8080/api/reservations')
+    if (!res.ok) throw new Error('Greška pri preuzimanju rezervacija')
+    reservations.value = await res.json()
+  } catch (e) {
+    // Optionally handle error
   }
 }
 
@@ -260,12 +273,29 @@ onMounted(async () => {
     if (!menuRes.ok) throw new Error('Greška pri preuzimanju menija')
     menuItems.value = await menuRes.json()
     menuError.value = null
+
+    // Fetch reservations
+    await fetchReservations()
   } catch (e) {
     error.value = e.message
   } finally {
     loading.value = false
   }
 })
+
+// Helper to get today's date in YYYY-MM-DD format
+function todayISO() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+// Helper to get today's reservations for the selected table
+function getTodaysReservations(table) {
+  if (!table) return []
+  const today = todayISO()
+  return reservations.value.filter(
+    r => r.tableId === table.id && r.date && r.date.slice(0, 10) === today
+  )
+}
 
 async function printBillAndClearTable() {
   if (!selectedTable.value) return;
@@ -339,6 +369,14 @@ async function printBillAndClearTable() {
                   .reduce((sum, item) => sum + itemTotal(item), 0)
               }} EUR
             </span>
+          </li>
+        </ul>
+
+        <h4>Rezervacije za danas ({{ todayISO() }}):</h4>
+        <ul>
+          <li v-if="getTodaysReservations(selectedTable).length === 0">Nema rezervacija za danas.</li>
+          <li v-for="rez in getTodaysReservations(selectedTable)" :key="rez.id">
+            {{ rez.date ? rez.date.slice(11, 16) : '' }} - {{ rez.name ? rez.name : 'Nepoznat gost' }}
           </li>
         </ul>
 

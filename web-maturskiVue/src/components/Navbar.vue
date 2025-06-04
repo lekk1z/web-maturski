@@ -43,7 +43,6 @@ async function confirmUserChange() {
     const newName = prompt("Unesite ime novog korisnika:");
     if (newName && newName.trim()) {
       try {
-        usersLoading.value = true;
         const added = await props.addUser(newName.trim());
         if (added) {
           emit('user-change', added);
@@ -51,7 +50,6 @@ async function confirmUserChange() {
       } catch (e) {
         alert(e.message || 'Greška pri dodavanju korisnika');
       } finally {
-        usersLoading.value = false;
         toggleChangeUser();
       }
     } else {
