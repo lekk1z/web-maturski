@@ -28,6 +28,10 @@ const orders = ref([])
 // Store all reservations
 const reservations = ref([])
 
+// Edit order popup
+const showEditOrderPopup = ref(false)
+const editOrderItems = ref({}) // { menuItemId: { ...item, quantity } }
+
 async function fetchTables() {
   loading.value = true
   try {
@@ -317,6 +321,43 @@ async function printBillAndClearTable() {
     alert(e.message || 'Greška pri štampanju računa i oslobađanju stola');
   }
 }
+
+// Edit order popup methods
+function openEditOrderPopup() {
+  // Pre-fill with current unique ordered items
+  editOrderItems.value = {}
+  getUniqueOrderedItems(selectedTable.value).forEach(item => {
+    editOrderItems.value[item.menuItemId] = { ...item }
+  })
+  showEditOrderPopup.value = true
+}
+
+function closeEditOrderPopup() {
+  showEditOrderPopup.value = false
+}
+
+async function saveEditedOrder() {
+  // Prepare new items array
+  const newItems = Object.values(editOrderItems.value)
+    .filter(i => i.quantity > 0)
+    .map(i => ({
+      menuItemId: i.menuItemId,
+      quantity: i.quantity
+    }))
+  // Update all related orders for this table (simple version: delete all, create one new order)
+  // Or, if your API supports, update the latest order only
+  // Here, let's update the latest order for simplicity:
+  const tableOrders = getTableOrders(selectedTable.value)
+  if (tableOrders.length === 0) return closeEditOrderPopup()
+  const latestOrder = tableOrders[tableOrders.length - 1]
+  await fetch(`http://localhost:8080/api/orders/${latestOrder.id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...latestOrder, items: newItems })
+  })
+  await fetchTables()
+  closeEditOrderPopup()
+}
 </script>
 
 <template>
@@ -328,7 +369,13 @@ async function printBillAndClearTable() {
       <div v-if="tables.length === 0">Nema stolova.</div>
       <div class="tables-list">
         <div
-          v-for="table in tables.filter(t => Array.isArray(props.user?.tableIds) ? props.user.tableIds.includes(t.id) : true)"
+          v-for="table in tables.filter(t =>
+            props.user?.superuser
+              ? true
+              : Array.isArray(props.user?.tableIds)
+                ? props.user.tableIds.includes(t.id)
+                : true
+          )"
           :key="table.id"
           class="table-card"
           :class="{ occupied: table.occupied }"
@@ -385,6 +432,15 @@ async function printBillAndClearTable() {
 
         <!-- Open menu popup on click -->
         <button @click="openMenuPopup" v-if="selectedTable.occupied">Dodaj stavku na račun</button>
+
+        <!-- Add this button to open the edit order popup -->
+        <button
+          v-if="selectedTable.occupied && getUniqueOrderedItems(selectedTable).length > 0"
+          @click="openEditOrderPopup"
+          style="margin-top: 10px;"
+        >
+          Izmeni porudžbinu
+        </button>
       </div>
     </div>
 
@@ -413,6 +469,27 @@ async function printBillAndClearTable() {
         </div>
         <div style="margin-top: 18px; text-align: right;">
           <button @click="confirmOrder" :disabled="Object.keys(selectedOrderItems).length === 0">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit order popup -->
+    <div v-if="showEditOrderPopup" class="popup-overlay">
+      <div class="popup-box menu-popup-box">
+        <button class="close-btn" @click="closeEditOrderPopup">×</button>
+        <h3>Izmeni porudžbinu</h3>
+        <div v-if="Object.keys(editOrderItems).length === 0">Nema stavki za izmenu.</div>
+        <div v-else>
+          <div v-for="item in Object.values(editOrderItems)" :key="item.menuItemId" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+            <span style="min-width:120px;">{{ item.name }}</span>
+            <button @click="item.quantity > 0 && (editOrderItems[item.menuItemId].quantity--)" :disabled="item.quantity === 0">-</button>
+            <span>{{ item.quantity }}</span>
+            <button @click="editOrderItems[item.menuItemId].quantity++">+</button>
+            <button @click="editOrderItems[item.menuItemId].quantity = 0" style="color:#c62828;">Ukloni</button>
+          </div>
+          <div style="text-align:right;margin-top:18px;">
+            <button @click="saveEditedOrder">Sačuvaj izmene</button>
+          </div>
         </div>
       </div>
     </div>

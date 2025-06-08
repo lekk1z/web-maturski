@@ -49,6 +49,7 @@ function handleSelect(item) {
 function handleUserChange(newUser) {
   user.value = newUser
   sessionStorage.setItem('user', JSON.stringify(newUser))
+  fetchUsers()
 }
 
 onMounted(fetchUsers)
@@ -65,8 +66,5 @@ onMounted(fetchUsers)
   <Stolovi :user="user" v-if="selectedItem === 'Stolovi'" />
   <Meni v-if="selectedItem === 'Meni'" />
   <Rezervacije v-if="selectedItem === 'Rezervacije'" />
-  <Podesavanja v-if="selectedItem === 'Podesavanja'" />
-  <div>
-    <p>Ulogovan korisnik: {{ user?.name }}</p>
-  </div>
+  <Podesavanja v-if="selectedItem === 'Podesavanja'" :user="user" />
 </template>

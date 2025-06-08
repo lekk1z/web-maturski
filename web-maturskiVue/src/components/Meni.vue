@@ -6,10 +6,10 @@ const loading = ref(true)
 const error = ref(null)
 
 const CATEGORY_MAP = {
-  1: 'Predjela',
-  2: 'Glavna jela',
-  3: 'Dezerti',
-  4: 'Pića',
+  1: 'Topli napici',
+  2: 'Hladni napici',
+  3: 'Jela',
+  4: 'Dezerti'
   // Dodaj još po potrebi
 }
 

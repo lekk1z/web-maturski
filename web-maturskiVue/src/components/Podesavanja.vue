@@ -1,5 +1,5 @@
 <template>
-  <div class="podesavanja-container">
+  <div v-if="props.user.superuser" class="podesavanja-container">
     <h1>Podešavanja</h1>
     <div class="tabs">
       <button
@@ -13,31 +13,34 @@
     </div>
     <div class="tab-content">
       <div v-if="activeTab === 'Stolovi'">
-        <!-- Ovde ide komponenta ili forma za uređivanje stolova -->
-        <h2>Uredi stolove</h2>
-        <!-- ... -->
+        <StoloviSet />
       </div>
       <div v-else-if="activeTab === 'Meni'">
-        <!-- Ovde ide komponenta ili forma za uređivanje menija -->
-        <h2>Uredi meni</h2>
-        <!-- ... -->
+        <MeniSet />
       </div>
       <div v-else-if="activeTab === 'Rezervacije'">
-        <!-- Ovde ide komponenta ili forma za uređivanje rezervacija -->
-        <h2>Uredi rezervacije</h2>
-        <!-- ... -->
+        <RezervacijeSet />
       </div>
       <div v-else-if="activeTab === 'Korisnici'">
-        <!-- Ovde ide komponenta ili forma za uređivanje korisnika -->
-        <h2>Uredi korisnike</h2>
-        <!-- ... -->
+        <UserSet />
       </div>
     </div>
+  </div>
+  <div v-else>
+    <p style="text-align: center; margin-top: 50px;">Nemate dozvolu za pristup podešavanjima.</p>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import StoloviSet from './podesavanja/stoloviset.vue';
+import MeniSet from './podesavanja/meniset.vue';
+import RezervacijeSet from './podesavanja/rezervacijeset.vue';
+import UserSet from './podesavanja/userset.vue';
+
+const props = defineProps({
+  user: Object
+})
 
 const tabs = ['Stolovi', 'Meni', 'Rezervacije', 'Korisnici']
 const activeTab = ref(tabs[0])

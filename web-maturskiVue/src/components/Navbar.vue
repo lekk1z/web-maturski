@@ -69,10 +69,13 @@ const vidljivostChangeUser = ref(false);
 function toggleChangeUser() {
   vidljivostChangeUser.value = !vidljivostChangeUser.value;
 }
+function returnToMain() {
+  emit('select', 'Stolovi');
+}
 </script>
 <template>
     <div class="topbar">
-      <h1>Restoran Pita</h1>
+      <h1 @click="returnToMain()" class="logo">Restoran Pita</h1>
      <h2 id="user" class="centered-user" @click="promeniUser">Zdravo, {{props.user?.name}}!</h2>
 
       <div class="change-user-container" id="change-user-container" v-if="vidljivostChangeUser">
@@ -189,5 +192,9 @@ nav ul a::before {
   box-shadow: 0 4px 24px rgba(0,0,0,0.2);
   min-width: 280px;
   text-align: center;
+}
+
+.logo:hover {
+  cursor: pointer;
 }
 </style>
