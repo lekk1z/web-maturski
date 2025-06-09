@@ -3,11 +3,7 @@
     <h3>Meni</h3>
     <div v-for="(cat, catId) in groupedMenu" :key="catId">
       <h2 class="category-title">{{ categoryName(catId) }}</h2>
-      <div
-        v-for="(item, idx) in cat"
-        :key="item.id"
-        class="menu-item"
-      >
+      <div v-for="(item, idx) in cat" :key="item.id" class="menu-item">
         <input
           v-model="item.name"
           placeholder="Naziv stavke"
@@ -25,7 +21,11 @@
           <option :value="3">Hrana</option>
           <option :value="4">Dezerti</option>
         </select>
-        <button @click="deleteItemById(item.id)" class="delete-btn" title="Obriši">
+        <button
+          @click="deleteItemById(item.id)"
+          class="delete-btn"
+          title="Obriši"
+        >
           🗑️
         </button>
       </div>
@@ -48,10 +48,10 @@ export default {
       saving: false,
       nextId: 100000,
       categories: {
-        1: 'Topli napici',
-        2: 'Hladni napici',
-        3: 'Hrana',
-        4: 'Dezerti',
+        1: "Topli napici",
+        2: "Hladni napici",
+        3: "Hrana",
+        4: "Dezerti",
       },
     };
   },
@@ -68,52 +68,56 @@ export default {
   },
   methods: {
     categoryName(catId) {
-      return this.categories[catId] || 'Nepoznata kategorija';
+      return this.categories[catId] || "Nepoznata kategorija";
     },
     async fetchMenu() {
-      const res = await fetch('http://localhost:8080/api/menu');
+      const res = await fetch("http://localhost:8080/api/menu");
       this.menu = await res.json();
-      const maxId = this.menu.reduce((max, item) => item.id > max ? item.id : max, 0);
+      const maxId = this.menu.reduce(
+        (max, item) => (item.id > max ? item.id : max),
+        0
+      );
       this.nextId = maxId + 1;
     },
     async saveMenu() {
       this.saving = true;
       for (const item of this.menu) {
         await fetch(`http://localhost:8080/api/menu/${item.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(item),
         });
       }
       this.saving = false;
-      alert('Meni je ažuriran!');
+      alert("Meni je ažuriran!");
     },
     async deleteItemById(id) {
-      if (!confirm('Da li ste sigurni da želite da obrišete ovu stavku?')) return;
+      if (!confirm("Da li ste sigurni da želite da obrišete ovu stavku?"))
+        return;
       const res = await fetch(`http://localhost:8080/api/menu/${id}`, {
-        method: 'DELETE'
+        method: "DELETE",
       });
       if (res.ok) {
         await this.fetchMenu();
       } else {
-        alert('Greška pri brisanju stavke.');
+        alert("Greška pri brisanju stavke.");
       }
     },
     async addItem() {
       const newItem = {
-        name: '',
+        name: "",
         price: 0,
         categoryId: 4,
       };
-      const res = await fetch('http://localhost:8080/api/menu', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("http://localhost:8080/api/menu", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newItem),
       });
       if (res.ok) {
         await this.fetchMenu();
       } else {
-        alert('Greška pri dodavanju stavke.');
+        alert("Greška pri dodavanju stavke.");
       }
     },
   },
@@ -131,7 +135,7 @@ export default {
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(56, 142, 60, 0.08);
   padding: 24px 20px;
-  font-family: 'Segoe UI', Arial, sans-serif;
+  font-family: "Segoe UI", Arial, sans-serif;
 }
 
 h3 {
@@ -158,7 +162,7 @@ h3 {
   border-radius: 8px;
   padding: 12px 10px;
   margin-bottom: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   border: 1px solid #b6e2b6;
   gap: 10px;
 }
@@ -167,7 +171,8 @@ h3 {
   border-bottom: none;
 }
 
-.menu-input, .menu-select {
+.menu-input,
+.menu-select {
   padding: 7px 10px;
   border: 1px solid #b6e2b6;
   border-radius: 5px;
@@ -272,8 +277,12 @@ h3 {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg);}
-  100% { transform: rotate(360deg);}
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 600px) {

@@ -1,41 +1,44 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from "vue";
 
-const users = ref([])
-const tables = ref([])
-const showModal = ref(false)
+const users = ref([]);
+const tables = ref([]);
+const showModal = ref(false);
 const editUserData = ref({
-  id: '',
-  name: '',
+  id: "",
+  name: "",
   tableIds: [],
-  superuser: null
-})
-const loading = ref(false)
+  superuser: null,
+});
+const loading = ref(false);
 
 // Computed: count of superusers
-const superUserCount = computed(() => users.value.filter(u => u.superuser).length)
+const superUserCount = computed(
+  () => users.value.filter((u) => u.superuser).length
+);
 // Computed: is this the only superuser
-const isOnlySuperUser = computed(() =>
-  editUserData.value.superuser &&
-  superUserCount.value === 1 &&
-  users.value.find(u => u.id === editUserData.value.id)?.superuser
-)
+const isOnlySuperUser = computed(
+  () =>
+    editUserData.value.superuser &&
+    superUserCount.value === 1 &&
+    users.value.find((u) => u.id === editUserData.value.id)?.superuser
+);
 
 async function fetchUsers() {
   try {
-    const response = await fetch('http://localhost:8080/api/users')
-    users.value = await response.json()
+    const response = await fetch("http://localhost:8080/api/users");
+    users.value = await response.json();
   } catch (e) {
-    console.error(e.message || 'Greška pri preuzimanju korisnika')
+    console.error(e.message || "Greška pri preuzimanju korisnika");
   }
 }
 
 async function fetchTables() {
   try {
-    const response = await fetch('http://localhost:8080/api/tables')
-    tables.value = await response.json()
+    const response = await fetch("http://localhost:8080/api/tables");
+    tables.value = await response.json();
   } catch (e) {
-    console.error(e.message || 'Greška pri preuzimanju stolova')
+    console.error(e.message || "Greška pri preuzimanju stolova");
   }
 }
 
@@ -44,59 +47,59 @@ function openEditUser(user) {
     id: user.id,
     name: user.name,
     tableIds: [...(user.tableIds || [])],
-    superuser: user.superuser ?? false
-  }
-  showModal.value = true
+    superuser: user.superuser ?? false,
+  };
+  showModal.value = true;
 }
 
 function closeModal() {
-  showModal.value = false
+  showModal.value = false;
 }
 
 function toggleTable(tableId) {
-  const idx = editUserData.value.tableIds.indexOf(tableId)
+  const idx = editUserData.value.tableIds.indexOf(tableId);
   if (idx === -1) {
-    editUserData.value.tableIds.push(tableId)
+    editUserData.value.tableIds.push(tableId);
   } else {
-    editUserData.value.tableIds.splice(idx, 1)
+    editUserData.value.tableIds.splice(idx, 1);
   }
 }
 
 async function saveUser() {
-  loading.value = true
+  loading.value = true;
   try {
     await fetch(`http://localhost:8080/api/users/${editUserData.value.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: editUserData.value.name,
         tableIds: editUserData.value.tableIds,
-        superuser: editUserData.value.superuser || false
-      })
-    })
-    await fetchUsers()
-    closeModal()
+        superuser: editUserData.value.superuser || false,
+      }),
+    });
+    await fetchUsers();
+    closeModal();
   } catch (e) {
-    alert('Greška pri čuvanju korisnika')
+    alert("Greška pri čuvanju korisnika");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function deleteUser(id) {
-  if (!confirm('Obrisati korisnika?')) return
+  if (!confirm("Obrisati korisnika?")) return;
   try {
-    await fetch(`http://localhost:8080/api/users/${id}`, { method: 'DELETE' })
-    await fetchUsers()
+    await fetch(`http://localhost:8080/api/users/${id}`, { method: "DELETE" });
+    await fetchUsers();
   } catch (e) {
-    alert('Greška pri brisanju korisnika')
+    alert("Greška pri brisanju korisnika");
   }
 }
 
 onMounted(() => {
-  fetchUsers()
-  fetchTables()
-})
+  fetchUsers();
+  fetchTables();
+});
 </script>
 
 <template>
@@ -104,8 +107,8 @@ onMounted(() => {
     <li v-for="user in users" :key="user.id">
       <span @click="openEditUser(user)" class="user-link">{{ user.name }}</span>
       <div class="action-buttons">
-      <button @click="openEditUser(user)">Uredi</button>
-      <button @click="deleteUser(user.id)">Obriši</button>
+        <button @click="openEditUser(user)">Uredi</button>
+        <button @click="deleteUser(user.id)">Obriši</button>
       </div>
     </li>
   </ul>
@@ -129,7 +132,7 @@ onMounted(() => {
           />
           <label :for="'table-' + table.id">Sto {{ table.number }}</label>
         </div>
-        <div class="superuser-checkbox" style="margin-top: 12px;">
+        <div class="superuser-checkbox" style="margin-top: 12px">
           <input
             type="checkbox"
             id="superuser"
@@ -137,7 +140,10 @@ onMounted(() => {
             :disabled="isOnlySuperUser"
           />
           <label for="superuser">Superuser</label>
-          <span v-if="isOnlySuperUser" style="color:#c62828; font-size:0.95em; margin-left:8px;">
+          <span
+            v-if="isOnlySuperUser"
+            style="color: #c62828; font-size: 0.95em; margin-left: 8px"
+          >
             Mora postojati bar jedan superuser
           </span>
         </div>
@@ -202,8 +208,11 @@ onMounted(() => {
 }
 .modal-backdrop {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.25);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -214,7 +223,7 @@ onMounted(() => {
   border-radius: 8px;
   padding: 24px 20px;
   min-width: 320px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.12);
   max-width: 95vw;
 }
 .modal h3 {
@@ -227,7 +236,9 @@ label {
   margin-bottom: 10px;
   font-weight: 500;
 }
-input[type="text"], input[type="checkbox"], input[type="number"] {
+input[type="text"],
+input[type="checkbox"],
+input[type="number"] {
   margin-top: 4px;
   margin-bottom: 8px;
 }
@@ -295,9 +306,8 @@ input[type="text"] {
     max-width: 98vw;
   }
 }
-.action-buttons{
-    gap:5px;
-    display: flex;
+.action-buttons {
+  gap: 5px;
+  display: flex;
 }
-
 </style>

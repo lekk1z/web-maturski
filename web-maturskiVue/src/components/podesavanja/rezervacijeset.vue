@@ -3,9 +3,7 @@
     <h2>Sve rezervacije</h2>
     <div v-if="loading">Loading...</div>
     <div v-else>
-      <div v-if="reservations.length === 0">
-        Nema rezervacija
-      </div>
+      <div v-if="reservations.length === 0">Nema rezervacija</div>
       <ul v-else>
         <li v-for="reservation in reservations" :key="reservation.id">
           <div v-if="editingId === reservation.id">
@@ -20,11 +18,14 @@
             <button @click="cancelEdit">Cancel</button>
           </div>
           <div v-else>
-            <strong>{{ reservation.name }}</strong> - 
-            {{ formatDate(reservation.date) }} - Sto {{ reservation.tableInfo?.number || 'Unknown' }}
+            <strong>{{ reservation.name }}</strong> -
+            {{ formatDate(reservation.date) }} - Sto
+            {{ reservation.tableInfo?.number || "Unknown" }}
             <span class="action-buttons">
               <button @click="startEdit(reservation)" id="editbtn">Edit</button>
-              <button @click="deleteReservation(reservation.id)" id="delbtn">Delete</button>
+              <button @click="deleteReservation(reservation.id)" id="delbtn">
+                Delete
+              </button>
             </span>
           </div>
         </li>
@@ -34,131 +35,137 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from "vue";
 
-const tables = ref([])
-const reservations = ref([])
-const loading = ref(true)
-const editingId = ref(null)
+const tables = ref([]);
+const reservations = ref([]);
+const loading = ref(true);
+const editingId = ref(null);
 const editForm = ref({
-  name: '',
-  date: '',
-  tableId: ''
-})
+  name: "",
+  date: "",
+  tableId: "",
+});
 
 function toJavaLocalDateTime(dateStr) {
   // Accepts 'YYYY-MM-DDTHH:mm' and returns 'YYYY-MM-DDTHH:mm:ss'
-  if (!dateStr) return ''
-  if (dateStr.length === 16) return dateStr + ':00'
-  return dateStr
+  if (!dateStr) return "";
+  if (dateStr.length === 16) return dateStr + ":00";
+  return dateStr;
 }
 
 async function fetchReservations() {
   try {
-    const tableResponse = await fetch('http://localhost:8080/api/tables')
-    tables.value = await tableResponse.json()
+    const tableResponse = await fetch("http://localhost:8080/api/tables");
+    tables.value = await tableResponse.json();
 
-    const response = await fetch('http://localhost:8080/api/reservations')
-    const data = await response.json()
+    const response = await fetch("http://localhost:8080/api/reservations");
+    const data = await response.json();
 
     // Fetch table info for each reservation
     const reservationsWithTable = await Promise.all(
       data.map(async (reservation) => {
         if (reservation.tableId) {
           try {
-            const tableRes = await fetch(`http://localhost:8080/api/tables/${reservation.tableId}`)
-            const tableData = await tableRes.json()
-            reservation.tableInfo = tableData // Attach table info
+            const tableRes = await fetch(
+              `http://localhost:8080/api/tables/${reservation.tableId}`
+            );
+            const tableData = await tableRes.json();
+            reservation.tableInfo = tableData; // Attach table info
           } catch (err) {
-            reservation.tableInfo = { number: 'Unknown' }
+            reservation.tableInfo = { number: "Unknown" };
           }
         } else {
-          reservation.tableInfo = { number: 'Unknown' }
+          reservation.tableInfo = { number: "Unknown" };
         }
-        return reservation
+        return reservation;
       })
-    )
+    );
 
-    reservations.value = reservationsWithTable
+    reservations.value = reservationsWithTable;
   } catch (error) {
-    console.error('Failed to fetch reservations:', error)
+    console.error("Failed to fetch reservations:", error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function parseLocalDateTime(dateStr) {
   // Expects format: "YYYY-MM-DDTHH:mm:ss"
-  if (!dateStr) return new Date()
-  const [datePart, timePart] = dateStr.split('T')
-  const [year, month, day] = datePart.split('-').map(Number)
-  const [hour, minute, second = 0] = (timePart || '').split(':').map(Number)
-  return new Date(year, month - 1, day, hour, minute, second || 0)
+  if (!dateStr) return new Date();
+  const [datePart, timePart] = dateStr.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute, second = 0] = (timePart || "").split(":").map(Number);
+  return new Date(year, month - 1, day, hour, minute, second || 0);
 }
 
 function formatDate(dateStr) {
-  const date = parseLocalDateTime(dateStr)
-  return date.toLocaleString()
+  const date = parseLocalDateTime(dateStr);
+  return date.toLocaleString();
 }
 
 function startEdit(reservation) {
-  editingId.value = reservation.id
+  editingId.value = reservation.id;
   editForm.value = {
     name: reservation.name,
     date: reservation.date.slice(0, 16), // for datetime-local input
-    tableId: reservation.tableId || (reservation.tableInfo && reservation.tableInfo.id) || null
-  }
+    tableId:
+      reservation.tableId ||
+      (reservation.tableInfo && reservation.tableInfo.id) ||
+      null,
+  };
 }
 
 function cancelEdit() {
-  editingId.value = null
-  editForm.value = { name: '', date: '', tableId: null }
+  editingId.value = null;
+  editForm.value = { name: "", date: "", tableId: null };
 }
 
 async function saveEdit(id) {
   try {
     const res = await fetch(`http://localhost:8080/api/reservations/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         tableId: editForm.value.tableId,
         name: editForm.value.name,
-        date: toJavaLocalDateTime(editForm.value.date)
-      })
-    })
-    if (!res.ok) throw new Error('Failed to update reservation')
-    await fetchReservations()
-    cancelEdit()
+        date: toJavaLocalDateTime(editForm.value.date),
+      }),
+    });
+    if (!res.ok) throw new Error("Failed to update reservation");
+    await fetchReservations();
+    cancelEdit();
   } catch (e) {
-    alert('Error updating reservation')
+    alert("Error updating reservation");
   }
 }
 
 async function deleteReservation(id) {
-  if (!confirm('Are you sure you want to delete this reservation?')) return
+  if (!confirm("Are you sure you want to delete this reservation?")) return;
   try {
     const res = await fetch(`http://localhost:8080/api/reservations/${id}`, {
-      method: 'DELETE'
-    })
-    if (!res.ok) throw new Error('Failed to delete reservation')
-    await fetchReservations()
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error("Failed to delete reservation");
+    await fetchReservations();
   } catch (e) {
-    alert('Error deleting reservation')
+    alert("Error deleting reservation");
   }
 }
 
-onMounted(fetchReservations)
+onMounted(fetchReservations);
 </script>
 
 <style scoped>
-#editbtn, #delbtn {
- text-align:end;
+#editbtn,
+#delbtn {
+  text-align: end;
 }
 .reservation-settings {
   padding: 1.5rem 1rem;
   background: #f9f9f9;
   border-radius: 10px;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
   max-width: 600px;
   margin: 0 auto;
 }
@@ -181,7 +188,7 @@ li {
   border-radius: 7px;
   margin-bottom: 12px;
   padding: 12px 10px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -193,10 +200,11 @@ li > div {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  justify-content: space-between; 
+  justify-content: space-between;
 }
 
-input, select {
+input,
+select {
   padding: 5px 8px;
   border: 1px solid #bdbdbd;
   border-radius: 4px;

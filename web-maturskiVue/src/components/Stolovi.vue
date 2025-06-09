@@ -1,146 +1,146 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted } from "vue";
 
 // Add this line to receive the user prop from App.vue
 const props = defineProps({
-  user: Object
-})
+  user: Object,
+});
 
-const tables = ref([])
-const loading = ref(true)
-const error = ref(null)
+const tables = ref([]);
+const loading = ref(true);
+const error = ref(null);
 
-const showPopup = ref(false)
-const selectedTable = ref(null)
+const showPopup = ref(false);
+const selectedTable = ref(null);
 
 // Menu popup and items
-const showMenuPopup = ref(false)
-const menuItems = ref([])
-const menuLoading = ref(false)
-const menuError = ref(null)
+const showMenuPopup = ref(false);
+const menuItems = ref([]);
+const menuLoading = ref(false);
+const menuError = ref(null);
 
 // Track selected items and their quantities for the order
-const selectedOrderItems = ref({}) // { menuId: { ...item, quantity } }
+const selectedOrderItems = ref({}); // { menuId: { ...item, quantity } }
 
 // Store all orders
-const orders = ref([])
+const orders = ref([]);
 
 // Store all reservations
-const reservations = ref([])
+const reservations = ref([]);
 
 // Edit order popup
-const showEditOrderPopup = ref(false)
-const editOrderItems = ref({}) // { menuItemId: { ...item, quantity } }
+const showEditOrderPopup = ref(false);
+const editOrderItems = ref({}); // { menuItemId: { ...item, quantity } }
 
 async function fetchTables() {
-  loading.value = true
+  loading.value = true;
   try {
     // Fetch tables
-    const res = await fetch('http://localhost:8080/api/tables')
-    if (!res.ok) throw new Error('Greska pri preuzimanju stolova')
-    tables.value = await res.json()
-    error.value = null
+    const res = await fetch("http://localhost:8080/api/tables");
+    if (!res.ok) throw new Error("Greska pri preuzimanju stolova");
+    tables.value = await res.json();
+    error.value = null;
 
     // Fetch all orders
-    const ordersRes = await fetch('http://localhost:8080/api/orders')
-    if (!ordersRes.ok) throw new Error('Greška pri preuzimanju porudžbina')
-    orders.value = await ordersRes.json()
+    const ordersRes = await fetch("http://localhost:8080/api/orders");
+    if (!ordersRes.ok) throw new Error("Greška pri preuzimanju porudžbina");
+    orders.value = await ordersRes.json();
   } catch (e) {
-    error.value = e.message
+    error.value = e.message;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function fetchReservations() {
   try {
-    const res = await fetch('http://localhost:8080/api/reservations')
-    if (!res.ok) throw new Error('Greška pri preuzimanju rezervacija')
-    reservations.value = await res.json()
+    const res = await fetch("http://localhost:8080/api/reservations");
+    if (!res.ok) throw new Error("Greška pri preuzimanju rezervacija");
+    reservations.value = await res.json();
   } catch (e) {
     // Optionally handle error
   }
 }
 
 function izmeniSto(id) {
-  const table = tables.value.find(t => t.id === id)
-  selectedTable.value = table
-  showPopup.value = true
+  const table = tables.value.find((t) => t.id === id);
+  selectedTable.value = table;
+  showPopup.value = true;
 }
 
 function closePopup() {
-  showPopup.value = false
-  selectedTable.value = null
+  showPopup.value = false;
+  selectedTable.value = null;
 }
 
 // Fetch menu items when opening menu popup
 async function openMenuPopup() {
-  menuLoading.value = true
-  showMenuPopup.value = true
-  selectedOrderItems.value = {} // Reset selection each time
+  menuLoading.value = true;
+  showMenuPopup.value = true;
+  selectedOrderItems.value = {}; // Reset selection each time
   try {
-    const res = await fetch('http://localhost:8080/api/menu')
-    if (!res.ok) throw new Error('Greška pri preuzimanju menija')
-    menuItems.value = await res.json()
-    menuError.value = null
+    const res = await fetch("http://localhost:8080/api/menu");
+    if (!res.ok) throw new Error("Greška pri preuzimanju menija");
+    menuItems.value = await res.json();
+    menuError.value = null;
   } catch (e) {
-    menuError.value = e.message
+    menuError.value = e.message;
   } finally {
-    menuLoading.value = false
+    menuLoading.value = false;
   }
 }
 
 function closeMenuPopup() {
-  showMenuPopup.value = false
+  showMenuPopup.value = false;
 }
 
 // Add item to order (increase quantity)
 function addItemToOrder(item) {
-  const id = item.id
+  const id = item.id;
   if (!selectedOrderItems.value[id]) {
-    selectedOrderItems.value[id] = { ...item, quantity: 1 }
+    selectedOrderItems.value[id] = { ...item, quantity: 1 };
   } else {
-    selectedOrderItems.value[id].quantity += 1
+    selectedOrderItems.value[id].quantity += 1;
   }
 }
 
 // Remove item or decrease quantity
 function removeItemFromOrder(item) {
-  const id = item.id
+  const id = item.id;
   if (selectedOrderItems.value[id]) {
     if (selectedOrderItems.value[id].quantity > 1) {
-      selectedOrderItems.value[id].quantity -= 1
+      selectedOrderItems.value[id].quantity -= 1;
     } else {
-      delete selectedOrderItems.value[id]
+      delete selectedOrderItems.value[id];
     }
   }
 }
 
 // Confirm order: send to API, update table with new orderId
 async function confirmOrder() {
-  if (!selectedTable.value) return
+  if (!selectedTable.value) return;
   const orderItems = Object.values(selectedOrderItems.value)
-    .filter(i => i.quantity > 0)
-    .map(i => ({
+    .filter((i) => i.quantity > 0)
+    .map((i) => ({
       menuItemId: i.id,
-      quantity: i.quantity
-    }))
+      quantity: i.quantity,
+    }));
   if (orderItems.length === 0) {
-    closeMenuPopup()
-    return
+    closeMenuPopup();
+    return;
   }
   try {
     // 1. Create the order
-    const orderRes = await fetch('http://localhost:8080/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const orderRes = await fetch("http://localhost:8080/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         tableId: selectedTable.value.id,
-        items: orderItems
-      })
-    })
-    if (!orderRes.ok) throw new Error('Greška pri slanju porudžbine')
-    const order = await orderRes.json()
+        items: orderItems,
+      }),
+    });
+    if (!orderRes.ok) throw new Error("Greška pri slanju porudžbine");
+    const order = await orderRes.json();
 
     // 2. Update the table with the new order ID
     const updatedOrdersId = Array.isArray(selectedTable.value.ordersId)
@@ -148,28 +148,28 @@ async function confirmOrder() {
       : [order.id];
 
     await fetch(`http://localhost:8080/api/tables/${selectedTable.value.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...selectedTable.value,
-        ordersId: updatedOrdersId
-      })
-    })
+        ordersId: updatedOrdersId,
+      }),
+    });
 
     // Refetch tables and orders
-    await fetchTables()
+    await fetchTables();
 
     // Force popup to close and reopen for the same table to re-render with fresh data
-    const tableId = selectedTable.value.id
-    closePopup()
+    const tableId = selectedTable.value.id;
+    closePopup();
     // Wait for next tick to ensure DOM updates
     setTimeout(() => {
-      izmeniSto(tableId)
-    }, 0)
+      izmeniSto(tableId);
+    }, 0);
   } catch (e) {
-    alert(e.message || 'Greška pri slanju porudžbine')
+    alert(e.message || "Greška pri slanju porudžbine");
   } finally {
-    closeMenuPopup()
+    closeMenuPopup();
   }
 }
 
@@ -177,128 +177,130 @@ async function confirmOrder() {
 function changeTableoccupancy(occupiedBool) {
   if (!selectedTable.value) return;
   selectedTable.value.occupied = occupiedBool;
-  const idx = tables.value.findIndex(t => t.id === selectedTable.value.id);
+  const idx = tables.value.findIndex((t) => t.id === selectedTable.value.id);
   if (idx !== -1) tables.value[idx].occupied = occupiedBool;
 
   fetch(`http://localhost:8080/api/tables/${selectedTable.value.id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...selectedTable.value, occupied: occupiedBool })
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...selectedTable.value, occupied: occupiedBool }),
   })
-    .then(res => {
-      if (!res.ok) throw new Error('Greška pri ažuriranju stola');
+    .then((res) => {
+      if (!res.ok) throw new Error("Greška pri ažuriranju stola");
       return res.json();
     })
-    .catch(e => {
-      alert(e.message || 'Greška pri ažuriranju stola');
+    .catch((e) => {
+      alert(e.message || "Greška pri ažuriranju stola");
     });
 }
 
 // Menu category mapping and grouping
 const CATEGORY_MAP = {
-  1: 'Predjela',
-  2: 'Glavna jela',
-  3: 'Dezerti',
-  4: 'Pića',
+  1: "Hladni napici",
+  2: "Topli napici",
+  3: "Hrana",
+  4: "Dezerti",
   // Dodaj još po potrebi
-}
+};
 
 function groupMenuByCategory(items) {
   return items.reduce((acc, item) => {
-    const catNum = item.categoryId || 0
-    const catName = CATEGORY_MAP[catNum] || `Kategorija ${catNum}`
-    if (!acc[catName]) acc[catName] = []
-    acc[catName].push(item)
-    return acc
-  }, {})
+    const catNum = item.categoryId || 0;
+    const catName = CATEGORY_MAP[catNum] || `Kategorija ${catNum}`;
+    if (!acc[catName]) acc[catName] = [];
+    acc[catName].push(item);
+    return acc;
+  }, {});
 }
 
 function getTableOrders(table) {
   // If table.orderId is a single value
   if (table.orderId) {
-    return orders.value.filter(o => o.id === table.orderId)
+    return orders.value.filter((o) => o.id === table.orderId);
   }
   // If table.ordersId is an array of ids
   if (Array.isArray(table.ordersId)) {
-    return orders.value.filter(o => table.ordersId.includes(o.id))
+    return orders.value.filter((o) => table.ordersId.includes(o.id));
   }
-  return []
+  return [];
 }
 
 // Returns a list of unique ordered items for a given table, with their total quantities.
 // This aggregates all items from all orders for the table, so each menu item appears only once with summed quantity.
 function getUniqueOrderedItems(table) {
-  const ordersForTable = getTableOrders(table)
-  const itemMap = {}
-  ordersForTable.forEach(order => {
-    (order.items || []).forEach(item => {
-      const id = item.menuItemId
+  const ordersForTable = getTableOrders(table);
+  const itemMap = {};
+  ordersForTable.forEach((order) => {
+    (order.items || []).forEach((item) => {
+      const id = item.menuItemId;
       // Try to match both as numbers and as strings
-      const menuItem = menuItems.value.find(m => String(m.id) === String(id))
+      const menuItem = menuItems.value.find((m) => String(m.id) === String(id));
       if (!itemMap[id]) {
         itemMap[id] = {
           menuItemId: id,
-          name: menuItem ? menuItem.name : (item.name || 'Nepoznato'),
-          quantity: item.quantity
-        }
+          name: menuItem ? menuItem.name : item.name || "Nepoznato",
+          quantity: item.quantity,
+        };
       } else {
-        itemMap[id].quantity += item.quantity
+        itemMap[id].quantity += item.quantity;
       }
-    })
-  })
-  return Object.values(itemMap)
+    });
+  });
+  return Object.values(itemMap);
 }
 
 function itemPrice(item) {
   // Try to get price from menuItems, fallback to item.price or 0
-  const menuItem = menuItems.value.find(m => String(m.id) === String(item.menuItemId))
-  return menuItem ? menuItem.price : (item.price || 0)
+  const menuItem = menuItems.value.find(
+    (m) => String(m.id) === String(item.menuItemId)
+  );
+  return menuItem ? menuItem.price : item.price || 0;
 }
 function itemTotal(item) {
-  return itemPrice(item) * item.quantity
+  return itemPrice(item) * item.quantity;
 }
 
 onMounted(async () => {
-  loading.value = true
+  loading.value = true;
   try {
     // Fetch tables
-    const res = await fetch('http://localhost:8080/api/tables')
-    if (!res.ok) throw new Error('Greska pri preuzimanju stolova')
-    tables.value = await res.json()
-    error.value = null
+    const res = await fetch("http://localhost:8080/api/tables");
+    if (!res.ok) throw new Error("Greska pri preuzimanju stolova");
+    tables.value = await res.json();
+    error.value = null;
 
     // Fetch all orders
-    const ordersRes = await fetch('http://localhost:8080/api/orders')
-    if (!ordersRes.ok) throw new Error('Greška pri preuzimanju porudžbina')
-    orders.value = await ordersRes.json()
+    const ordersRes = await fetch("http://localhost:8080/api/orders");
+    if (!ordersRes.ok) throw new Error("Greška pri preuzimanju porudžbina");
+    orders.value = await ordersRes.json();
 
     // Fetch menu items
-    const menuRes = await fetch('http://localhost:8080/api/menu')
-    if (!menuRes.ok) throw new Error('Greška pri preuzimanju menija')
-    menuItems.value = await menuRes.json()
-    menuError.value = null
+    const menuRes = await fetch("http://localhost:8080/api/menu");
+    if (!menuRes.ok) throw new Error("Greška pri preuzimanju menija");
+    menuItems.value = await menuRes.json();
+    menuError.value = null;
 
     // Fetch reservations
-    await fetchReservations()
+    await fetchReservations();
   } catch (e) {
-    error.value = e.message
+    error.value = e.message;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-})
+});
 
 // Helper to get today's date in YYYY-MM-DD format
 function todayISO() {
-  return new Date().toISOString().slice(0, 10)
+  return new Date().toISOString().slice(0, 10);
 }
 
 // Helper to get today's reservations for the selected table
 function getTodaysReservations(table) {
-  if (!table) return []
-  const today = todayISO()
+  if (!table) return [];
+  const today = todayISO();
   return reservations.value.filter(
-    r => r.tableId === table.id && r.date && r.date.slice(0, 10) === today
-  )
+    (r) => r.tableId === table.id && r.date && r.date.slice(0, 10) === today
+  );
 }
 
 async function printBillAndClearTable() {
@@ -306,57 +308,57 @@ async function printBillAndClearTable() {
   try {
     // Clear ordersId and set occupied to false
     await fetch(`http://localhost:8080/api/tables/${selectedTable.value.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...selectedTable.value,
         ordersId: [],
-        occupied: false
-      })
+        occupied: false,
+      }),
     });
     // Optionally, refetch tables/orders and close popup
     await fetchTables();
     closePopup();
   } catch (e) {
-    alert(e.message || 'Greška pri štampanju računa i oslobađanju stola');
+    alert(e.message || "Greška pri štampanju računa i oslobađanju stola");
   }
 }
 
 // Edit order popup methods
 function openEditOrderPopup() {
   // Pre-fill with current unique ordered items
-  editOrderItems.value = {}
-  getUniqueOrderedItems(selectedTable.value).forEach(item => {
-    editOrderItems.value[item.menuItemId] = { ...item }
-  })
-  showEditOrderPopup.value = true
+  editOrderItems.value = {};
+  getUniqueOrderedItems(selectedTable.value).forEach((item) => {
+    editOrderItems.value[item.menuItemId] = { ...item };
+  });
+  showEditOrderPopup.value = true;
 }
 
 function closeEditOrderPopup() {
-  showEditOrderPopup.value = false
+  showEditOrderPopup.value = false;
 }
 
 async function saveEditedOrder() {
   // Prepare new items array
   const newItems = Object.values(editOrderItems.value)
-    .filter(i => i.quantity > 0)
-    .map(i => ({
+    .filter((i) => i.quantity > 0)
+    .map((i) => ({
       menuItemId: i.menuItemId,
-      quantity: i.quantity
-    }))
+      quantity: i.quantity,
+    }));
   // Update all related orders for this table (simple version: delete all, create one new order)
   // Or, if your API supports, update the latest order only
   // Here, let's update the latest order for simplicity:
-  const tableOrders = getTableOrders(selectedTable.value)
-  if (tableOrders.length === 0) return closeEditOrderPopup()
-  const latestOrder = tableOrders[tableOrders.length - 1]
+  const tableOrders = getTableOrders(selectedTable.value);
+  if (tableOrders.length === 0) return closeEditOrderPopup();
+  const latestOrder = tableOrders[tableOrders.length - 1];
   await fetch(`http://localhost:8080/api/orders/${latestOrder.id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...latestOrder, items: newItems })
-  })
-  await fetchTables()
-  closeEditOrderPopup()
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...latestOrder, items: newItems }),
+  });
+  await fetchTables();
+  closeEditOrderPopup();
 }
 </script>
 
@@ -369,12 +371,12 @@ async function saveEditedOrder() {
       <div v-if="tables.length === 0">Nema stolova.</div>
       <div class="tables-list">
         <div
-          v-for="table in tables.filter(t =>
+          v-for="table in tables.filter((t) =>
             props.user?.superuser
               ? true
               : Array.isArray(props.user?.tableIds)
-                ? props.user.tableIds.includes(t.id)
-                : true
+              ? props.user.tableIds.includes(t.id)
+              : true
           )"
           :key="table.id"
           class="table-card"
@@ -382,7 +384,7 @@ async function saveEditedOrder() {
           @click="izmeniSto(table.id)"
         >
           <h3>Sto #{{ table.number }}</h3>
-          <p>Status: {{ table.occupied ? 'Zauzet' : 'Slobodan' }}</p>
+          <p>Status: {{ table.occupied ? "Zauzet" : "Slobodan" }}</p>
         </div>
       </div>
     </div>
@@ -391,53 +393,84 @@ async function saveEditedOrder() {
       <div class="popup-box">
         <button class="close-btn" @click="closePopup">×</button>
         <h3>Sto #{{ selectedTable.number }}</h3>
-        <p>Status: {{ selectedTable.occupied ? 'Zauzet' : 'Slobodan' }}</p>
+        <p>Status: {{ selectedTable.occupied ? "Zauzet" : "Slobodan" }}</p>
         <h4>Poručene stavke:</h4>
         <ul>
-          <li v-if="getTableOrders(selectedTable).length === 0">Nema poručenih stavki.</li>
+          <li v-if="getTableOrders(selectedTable).length === 0">
+            Nema poručenih stavki.
+          </li>
           <li
             v-for="item in getUniqueOrderedItems(selectedTable)"
             :key="item.menuItemId"
-            style="display: flex; justify-content: space-between; align-items: center;"
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
           >
             <span>
               {{ item.name }}
               x{{ item.quantity }}
-              <span style="color: #888; font-size: 0.95em;">
-                ({{ itemPrice(item) }} × {{ item.quantity }} = {{ itemTotal(item) }} EUR)
+              <span style="color: #888; font-size: 0.95em">
+                ({{ itemPrice(item) }} × {{ item.quantity }} =
+                {{ itemTotal(item) }} EUR)
               </span>
             </span>
           </li>
-          <li v-if="getUniqueOrderedItems(selectedTable).length > 0" style="margin-top: 8px; font-weight: bold; display: flex; justify-content: space-between;">
+          <li
+            v-if="getUniqueOrderedItems(selectedTable).length > 0"
+            style="
+              margin-top: 8px;
+              font-weight: bold;
+              display: flex;
+              justify-content: space-between;
+            "
+          >
             <span>Ukupno:</span>
             <span>
               {{
-                getUniqueOrderedItems(selectedTable)
-                  .reduce((sum, item) => sum + itemTotal(item), 0)
-              }} EUR
+                getUniqueOrderedItems(selectedTable).reduce(
+                  (sum, item) => sum + itemTotal(item),
+                  0
+                )
+              }}
+              EUR
             </span>
           </li>
         </ul>
 
         <h4>Rezervacije za danas ({{ todayISO() }}):</h4>
         <ul>
-          <li v-if="getTodaysReservations(selectedTable).length === 0">Nema rezervacija za danas.</li>
+          <li v-if="getTodaysReservations(selectedTable).length === 0">
+            Nema rezervacija za danas.
+          </li>
           <li v-for="rez in getTodaysReservations(selectedTable)" :key="rez.id">
-            {{ rez.date ? rez.date.slice(11, 16) : '' }} - {{ rez.name ? rez.name : 'Nepoznat gost' }}
+            {{ rez.date ? rez.date.slice(11, 16) : "" }} -
+            {{ rez.name ? rez.name : "Nepoznat gost" }}
           </li>
         </ul>
 
-        <button v-if="!selectedTable.occupied" @click="changeTableoccupancy(true)">Sedi korisnika</button>
+        <button
+          v-if="!selectedTable.occupied"
+          @click="changeTableoccupancy(true)"
+        >
+          Sedi korisnika
+        </button>
         <button v-else @click="printBillAndClearTable">Odstampaj racun</button>
 
         <!-- Open menu popup on click -->
-        <button @click="openMenuPopup" v-if="selectedTable.occupied">Dodaj stavku na račun</button>
+        <button @click="openMenuPopup" v-if="selectedTable.occupied">
+          Dodaj stavku na račun
+        </button>
 
         <!-- Add this button to open the edit order popup -->
         <button
-          v-if="selectedTable.occupied && getUniqueOrderedItems(selectedTable).length > 0"
+          v-if="
+            selectedTable.occupied &&
+            getUniqueOrderedItems(selectedTable).length > 0
+          "
           @click="openEditOrderPopup"
-          style="margin-top: 10px;"
+          style="margin-top: 10px"
         >
           Izmeni porudžbinu
         </button>
@@ -450,25 +483,40 @@ async function saveEditedOrder() {
         <button class="close-btn" @click="closeMenuPopup">×</button>
         <h3>Dodaj stavku</h3>
         <div v-if="menuLoading">Učitavanje...</div>
-        <div v-else-if="menuError" style="color:red;">{{ menuError }}</div>
+        <div v-else-if="menuError" style="color: red">{{ menuError }}</div>
         <div v-else class="menu-grid-scroll">
-          <template v-for="(items, category) in groupMenuByCategory(menuItems)" :key="category">
+          <template
+            v-for="(items, category) in groupMenuByCategory(menuItems)"
+            :key="category"
+          >
             <div class="menu-category-divider">{{ category }}</div>
             <div class="menu-grid">
               <div v-for="item in items" :key="item.id" class="menu-grid-item">
                 <button id="no-color" @click="addItemToOrder(item)">
-                  {{ item.name }}<br>
+                  {{ item.name }}<br />
                   <span class="menu-price">{{ item.price }} EUR</span>
-                  <span v-if="selectedOrderItems[item.id]">x{{ selectedOrderItems[item.id].quantity }}</span>
+                  <span v-if="selectedOrderItems[item.id]"
+                    >x{{ selectedOrderItems[item.id].quantity }}</span
+                  >
                 </button>
-                <button v-if="selectedOrderItems[item.id]" @click="removeItemFromOrder(item)"
-                  style="margin-top:4px;font-size:0.9em;">-</button>
+                <button
+                  v-if="selectedOrderItems[item.id]"
+                  @click="removeItemFromOrder(item)"
+                  style="margin-top: 4px; font-size: 0.9em"
+                >
+                  -
+                </button>
               </div>
             </div>
           </template>
         </div>
-        <div style="margin-top: 18px; text-align: right;">
-          <button @click="confirmOrder" :disabled="Object.keys(selectedOrderItems).length === 0">OK</button>
+        <div style="margin-top: 18px; text-align: right">
+          <button
+            @click="confirmOrder"
+            :disabled="Object.keys(selectedOrderItems).length === 0"
+          >
+            OK
+          </button>
         </div>
       </div>
     </div>
@@ -478,16 +526,41 @@ async function saveEditedOrder() {
       <div class="popup-box menu-popup-box">
         <button class="close-btn" @click="closeEditOrderPopup">×</button>
         <h3>Izmeni porudžbinu</h3>
-        <div v-if="Object.keys(editOrderItems).length === 0">Nema stavki za izmenu.</div>
+        <div v-if="Object.keys(editOrderItems).length === 0">
+          Nema stavki za izmenu.
+        </div>
         <div v-else>
-          <div v-for="item in Object.values(editOrderItems)" :key="item.menuItemId" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-            <span style="min-width:120px;">{{ item.name }}</span>
-            <button @click="item.quantity > 0 && (editOrderItems[item.menuItemId].quantity--)" :disabled="item.quantity === 0">-</button>
+          <div
+            v-for="item in Object.values(editOrderItems)"
+            :key="item.menuItemId"
+            style="
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              margin-bottom: 10px;
+            "
+          >
+            <span style="min-width: 120px">{{ item.name }}</span>
+            <button
+              @click="
+                item.quantity > 0 && editOrderItems[item.menuItemId].quantity--
+              "
+              :disabled="item.quantity === 0"
+            >
+              -
+            </button>
             <span>{{ item.quantity }}</span>
-            <button @click="editOrderItems[item.menuItemId].quantity++">+</button>
-            <button @click="editOrderItems[item.menuItemId].quantity = 0" style="color:#c62828;">Ukloni</button>
+            <button @click="editOrderItems[item.menuItemId].quantity++">
+              +
+            </button>
+            <button
+              @click="editOrderItems[item.menuItemId].quantity = 0"
+              style="color: #c62828"
+            >
+              Ukloni
+            </button>
           </div>
-          <div style="text-align:right;margin-top:18px;">
+          <div style="text-align: right; margin-top: 18px">
             <button @click="saveEditedOrder">Sačuvaj izmene</button>
           </div>
         </div>

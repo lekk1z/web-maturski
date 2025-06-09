@@ -1,21 +1,21 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch } from "vue";
 
 const props = defineProps({
   user: Object,
   users: Array,
-  addUser: Function
+  addUser: Function,
 });
-const emit = defineEmits(['select', 'user-change']);
+const emit = defineEmits(["select", "user-change"]);
 
-const vidljivost = ref(false)
-const iconica = ref('☰');
+const vidljivost = ref(false);
+const iconica = ref("☰");
 const promenividljivost = () => {
   vidljivost.value = !vidljivost.value;
-  iconica.value = vidljivost.value ? '✖' : '☰';
-}
+  iconica.value = vidljivost.value ? "✖" : "☰";
+};
 function selectItem(item) {
-  emit('select', item)
+  emit("select", item);
   promenividljivost();
 }
 const selectedUser = ref(null);
@@ -24,7 +24,9 @@ watch(
   () => props.user,
   (newUser) => {
     // Find the user object by name if possible
-    const found = props.users.find(u => u.name === (newUser?.name || newUser));
+    const found = props.users.find(
+      (u) => u.name === (newUser?.name || newUser)
+    );
     selectedUser.value = found || null;
   },
   { immediate: true }
@@ -33,22 +35,22 @@ watch(
 function promeniUser() {
   toggleChangeUser();
   // Try to set selectedUser to the current user object
-  const found = props.users.find(u => u.name === props.user?.name);
+  const found = props.users.find((u) => u.name === props.user?.name);
   selectedUser.value = found || null;
 }
 
 async function confirmUserChange() {
   // If "Dodaj korisnika..." is selected
-  if (selectedUser.value === 'add_new') {
+  if (selectedUser.value === "add_new") {
     const newName = prompt("Unesite ime novog korisnika:");
     if (newName && newName.trim()) {
       try {
         const added = await props.addUser(newName.trim());
         if (added) {
-          emit('user-change', added);
+          emit("user-change", added);
         }
       } catch (e) {
-        alert(e.message || 'Greška pri dodavanju korisnika');
+        alert(e.message || "Greška pri dodavanju korisnika");
       } finally {
         toggleChangeUser();
       }
@@ -60,7 +62,7 @@ async function confirmUserChange() {
   }
   // Regular user selection
   if (selectedUser.value && selectedUser.value.name !== props.user?.name) {
-    emit('user-change', selectedUser.value);
+    emit("user-change", selectedUser.value);
   }
   toggleChangeUser();
 }
@@ -70,44 +72,68 @@ function toggleChangeUser() {
   vidljivostChangeUser.value = !vidljivostChangeUser.value;
 }
 function returnToMain() {
-  emit('select', 'Stolovi');
+  emit("select", "Stolovi");
 }
 </script>
 <template>
-    <div class="topbar">
-      <h1 @click="returnToMain()" class="logo">Restoran Pita</h1>
-     <h2 id="user" class="centered-user" @click="promeniUser">Zdravo, {{props.user?.name}}!</h2>
+  <div class="topbar">
+    <h1 @click="returnToMain()" class="logo">Restoran Pita</h1>
+    <h2 id="user" class="centered-user" @click="promeniUser">
+      Zdravo, {{ props.user?.name }}!
+    </h2>
 
-      <div class="change-user-container" id="change-user-container" v-if="vidljivostChangeUser">
-        <div class="change-user-box">
-          <h2>Izaberi korisnika</h2>
-          <div v-if="usersLoading">Učitavanje korisnika...</div>
-          <div v-else-if="usersError" style="color:red;">{{ usersError }}</div>
-          <select
-            v-else
-            id="user-select"
-            class="user-select"
-            v-model="selectedUser"
-          >
-            <option v-for="u in users" :key="u.name" :value="u">{{ u.name }}</option>
-            <option :value="'add_new'">Dodaj korisnika...</option>
-          </select>
-          <button id="change-user-button" @click="confirmUserChange" :disabled="usersLoading || usersError">Izaberi</button>
-        </div>
-      </div>
-
-      <div class="menu-container">
-        <button class="hamburger" id="hamburger" @click="promenividljivost">{{iconica}}</button>
-        <nav v-if="vidljivost">
-          <ul>
-            <li id="pocetnabtn" @click="selectItem('Stolovi')">Pocetna</li>
-            <li id="menibtn" @click="selectItem('Meni')">Meni</li>
-            <li id="rezervacijebtn" @click="selectItem('Rezervacije')">Rezervacije</li>
-            <li class="no-divider" id="podesavanjabtn" @click="selectItem('Podesavanja')">Podesavanja</li>
-          </ul>
-        </nav>
+    <div
+      class="change-user-container"
+      id="change-user-container"
+      v-if="vidljivostChangeUser"
+    >
+      <div class="change-user-box">
+        <h2>Izaberi korisnika</h2>
+        <div v-if="usersLoading">Učitavanje korisnika...</div>
+        <div v-else-if="usersError" style="color: red">{{ usersError }}</div>
+        <select
+          v-else
+          id="user-select"
+          class="user-select"
+          v-model="selectedUser"
+        >
+          <option v-for="u in users" :key="u.name" :value="u">
+            {{ u.name }}
+          </option>
+          <option :value="'add_new'">Dodaj korisnika...</option>
+        </select>
+        <button
+          id="change-user-button"
+          @click="confirmUserChange"
+          :disabled="usersLoading || usersError"
+        >
+          Izaberi
+        </button>
       </div>
     </div>
+
+    <div class="menu-container">
+      <button class="hamburger" id="hamburger" @click="promenividljivost">
+        {{ iconica }}
+      </button>
+      <nav v-if="vidljivost">
+        <ul>
+          <li id="pocetnabtn" @click="selectItem('Stolovi')">Pocetna</li>
+          <li id="menibtn" @click="selectItem('Meni')">Meni</li>
+          <li id="rezervacijebtn" @click="selectItem('Rezervacije')">
+            Rezervacije
+          </li>
+          <li
+            class="no-divider"
+            id="podesavanjabtn"
+            @click="selectItem('Podesavanja')"
+          >
+            Podesavanja
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
 </template>
 
 <style>
@@ -117,7 +143,7 @@ function returnToMain() {
   box-sizing: border-box;
   font-family: Arial, sans-serif;
 }
-.topbar{
+.topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -140,7 +166,7 @@ function returnToMain() {
   border-radius: 7px;
 }
 .hamburger {
-  font-size:30px;
+  font-size: 30px;
   background: none;
   border: none;
   cursor: pointer;
@@ -164,7 +190,7 @@ nav ul {
 nav ul li {
   padding: 10px;
   border-bottom: 1px solid #ccc;
-  cursor:pointer;
+  cursor: pointer;
 }
 nav ul a::before {
   color: #000;
@@ -178,7 +204,7 @@ nav ul a::before {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.4);
   z-index: 9999;
   display: flex;
   align-items: center;
@@ -189,7 +215,7 @@ nav ul a::before {
   background: #fff;
   padding: 2rem 2.5rem;
   border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
   min-width: 280px;
   text-align: center;
 }

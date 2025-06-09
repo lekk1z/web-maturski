@@ -27,23 +27,25 @@
     </div>
   </div>
   <div v-else>
-    <p style="text-align: center; margin-top: 50px;">Nemate dozvolu za pristup podešavanjima.</p>
+    <p style="text-align: center; margin-top: 50px">
+      Nemate dozvolu za pristup podešavanjima.
+    </p>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import StoloviSet from './podesavanja/stoloviset.vue';
-import MeniSet from './podesavanja/meniset.vue';
-import RezervacijeSet from './podesavanja/rezervacijeset.vue';
-import UserSet from './podesavanja/userset.vue';
+import { ref } from "vue";
+import StoloviSet from "./podesavanja/stoloviset.vue";
+import MeniSet from "./podesavanja/meniset.vue";
+import RezervacijeSet from "./podesavanja/rezervacijeset.vue";
+import UserSet from "./podesavanja/userset.vue";
 
 const props = defineProps({
-  user: Object
-})
+  user: Object,
+});
 
-const tabs = ['Stolovi', 'Meni', 'Rezervacije', 'Korisnici']
-const activeTab = ref(tabs[0])
+const tabs = ["Stolovi", "Meni", "Rezervacije", "Korisnici"];
+const activeTab = ref(tabs[0]);
 </script>
 
 <style scoped>
@@ -52,7 +54,7 @@ const activeTab = ref(tabs[0])
   margin: 12px auto;
   background: #f9f9f9;
   border-radius: 10px;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
   padding: 10px 12px;
 }
 .tabs {
@@ -81,10 +83,10 @@ const activeTab = ref(tabs[0])
   border-radius: 0 0 6px 6px;
   padding: 14px 10px;
   min-height: 120px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
   font-size: 1.05em;
 }
-h1{
-    margin-bottom: 5px;
+h1 {
+  margin-bottom: 5px;
 }
 </style>
