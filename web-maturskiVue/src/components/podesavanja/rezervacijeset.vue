@@ -48,7 +48,6 @@ const editForm = ref({
 });
 
 function toJavaLocalDateTime(dateStr) {
-  // Accepts 'YYYY-MM-DDTHH:mm' and returns 'YYYY-MM-DDTHH:mm:ss'
   if (!dateStr) return "";
   if (dateStr.length === 16) return dateStr + ":00";
   return dateStr;
@@ -62,7 +61,6 @@ async function fetchReservations() {
     const response = await fetch("http://localhost:8080/api/reservations");
     const data = await response.json();
 
-    // Fetch table info for each reservation
     const reservationsWithTable = await Promise.all(
       data.map(async (reservation) => {
         if (reservation.tableId) {
@@ -71,7 +69,7 @@ async function fetchReservations() {
               `http://localhost:8080/api/tables/${reservation.tableId}`
             );
             const tableData = await tableRes.json();
-            reservation.tableInfo = tableData; // Attach table info
+            reservation.tableInfo = tableData;
           } catch (err) {
             reservation.tableInfo = { number: "Unknown" };
           }
@@ -91,7 +89,6 @@ async function fetchReservations() {
 }
 
 function parseLocalDateTime(dateStr) {
-  // Expects format: "YYYY-MM-DDTHH:mm:ss"
   if (!dateStr) return new Date();
   const [datePart, timePart] = dateStr.split("T");
   const [year, month, day] = datePart.split("-").map(Number);
@@ -108,7 +105,7 @@ function startEdit(reservation) {
   editingId.value = reservation.id;
   editForm.value = {
     name: reservation.name,
-    date: reservation.date.slice(0, 16), // for datetime-local input
+    date: reservation.date.slice(0, 16),
     tableId:
       reservation.tableId ||
       (reservation.tableInfo && reservation.tableInfo.id) ||

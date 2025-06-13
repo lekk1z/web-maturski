@@ -23,7 +23,6 @@ const selectedUser = ref(null);
 watch(
   () => props.user,
   (newUser) => {
-    // Find the user object by name if possible
     const found = props.users.find(
       (u) => u.name === (newUser?.name || newUser)
     );
@@ -34,13 +33,11 @@ watch(
 
 function promeniUser() {
   toggleChangeUser();
-  // Try to set selectedUser to the current user object
   const found = props.users.find((u) => u.name === props.user?.name);
   selectedUser.value = found || null;
 }
 
 async function confirmUserChange() {
-  // If "Dodaj korisnika..." is selected
   if (selectedUser.value === "add_new") {
     const newName = prompt("Unesite ime novog korisnika:");
     if (newName && newName.trim()) {
@@ -55,12 +52,10 @@ async function confirmUserChange() {
         toggleChangeUser();
       }
     } else {
-      // If user cancels or enters empty name, just close dialog
       toggleChangeUser();
     }
     return;
   }
-  // Regular user selection
   if (selectedUser.value && selectedUser.value.name !== props.user?.name) {
     emit("user-change", selectedUser.value);
   }

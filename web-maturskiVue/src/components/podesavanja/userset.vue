@@ -11,12 +11,10 @@ const editUserData = ref({
   superuser: null,
 });
 const loading = ref(false);
-
-// Computed: count of superusers
 const superUserCount = computed(
   () => users.value.filter((u) => u.superuser).length
 );
-// Computed: is this the only superuser
+
 const isOnlySuperUser = computed(
   () =>
     editUserData.value.superuser &&

@@ -1,7 +1,6 @@
 <script setup>
 import { ref, onMounted } from "vue";
 
-// Add this line to receive the user prop from App.vue
 const props = defineProps({
   user: Object,
 });
@@ -13,35 +12,29 @@ const error = ref(null);
 const showPopup = ref(false);
 const selectedTable = ref(null);
 
-// Menu popup and items
 const showMenuPopup = ref(false);
 const menuItems = ref([]);
 const menuLoading = ref(false);
 const menuError = ref(null);
 
-// Track selected items and their quantities for the order
-const selectedOrderItems = ref({}); // { menuId: { ...item, quantity } }
+const selectedOrderItems = ref({}); 
 
-// Store all orders
+
 const orders = ref([]);
 
-// Store all reservations
 const reservations = ref([]);
 
-// Edit order popup
 const showEditOrderPopup = ref(false);
-const editOrderItems = ref({}); // { menuItemId: { ...item, quantity } }
+const editOrderItems = ref({}); 
 
 async function fetchTables() {
   loading.value = true;
   try {
-    // Fetch tables
     const res = await fetch("http://localhost:8080/api/tables");
     if (!res.ok) throw new Error("Greska pri preuzimanju stolova");
     tables.value = await res.json();
     error.value = null;
 
-    // Fetch all orders
     const ordersRes = await fetch("http://localhost:8080/api/orders");
     if (!ordersRes.ok) throw new Error("Greška pri preuzimanju porudžbina");
     orders.value = await ordersRes.json();
@@ -58,7 +51,6 @@ async function fetchReservations() {
     if (!res.ok) throw new Error("Greška pri preuzimanju rezervacija");
     reservations.value = await res.json();
   } catch (e) {
-    // Optionally handle error
   }
 }
 
@@ -73,11 +65,11 @@ function closePopup() {
   selectedTable.value = null;
 }
 
-// Fetch menu items when opening menu popup
+
 async function openMenuPopup() {
   menuLoading.value = true;
   showMenuPopup.value = true;
-  selectedOrderItems.value = {}; // Reset selection each time
+  selectedOrderItems.value = {}; 
   try {
     const res = await fetch("http://localhost:8080/api/menu");
     if (!res.ok) throw new Error("Greška pri preuzimanju menija");
@@ -94,7 +86,6 @@ function closeMenuPopup() {
   showMenuPopup.value = false;
 }
 
-// Add item to order (increase quantity)
 function addItemToOrder(item) {
   const id = item.id;
   if (!selectedOrderItems.value[id]) {
@@ -104,7 +95,6 @@ function addItemToOrder(item) {
   }
 }
 
-// Remove item or decrease quantity
 function removeItemFromOrder(item) {
   const id = item.id;
   if (selectedOrderItems.value[id]) {
@@ -116,7 +106,6 @@ function removeItemFromOrder(item) {
   }
 }
 
-// Confirm order: send to API, update table with new orderId
 async function confirmOrder() {
   if (!selectedTable.value) return;
   const orderItems = Object.values(selectedOrderItems.value)
@@ -156,10 +145,9 @@ async function confirmOrder() {
       }),
     });
 
-    // Refetch tables and orders
+    
     await fetchTables();
 
-    // Force popup to close and reopen for the same table to re-render with fresh data
     const tableId = selectedTable.value.id;
     closePopup();
     // Wait for next tick to ensure DOM updates
@@ -173,7 +161,7 @@ async function confirmOrder() {
   }
 }
 
-// Table occupancy
+
 function changeTableoccupancy(occupiedBool) {
   if (!selectedTable.value) return;
   selectedTable.value.occupied = occupiedBool;
@@ -194,7 +182,7 @@ function changeTableoccupancy(occupiedBool) {
     });
 }
 
-// Menu category mapping and grouping
+
 const CATEGORY_MAP = {
   1: "Hladni napici",
   2: "Topli napici",
@@ -214,26 +202,21 @@ function groupMenuByCategory(items) {
 }
 
 function getTableOrders(table) {
-  // If table.orderId is a single value
   if (table.orderId) {
     return orders.value.filter((o) => o.id === table.orderId);
   }
-  // If table.ordersId is an array of ids
   if (Array.isArray(table.ordersId)) {
     return orders.value.filter((o) => table.ordersId.includes(o.id));
   }
   return [];
 }
 
-// Returns a list of unique ordered items for a given table, with their total quantities.
-// This aggregates all items from all orders for the table, so each menu item appears only once with summed quantity.
 function getUniqueOrderedItems(table) {
   const ordersForTable = getTableOrders(table);
   const itemMap = {};
   ordersForTable.forEach((order) => {
     (order.items || []).forEach((item) => {
       const id = item.menuItemId;
-      // Try to match both as numbers and as strings
       const menuItem = menuItems.value.find((m) => String(m.id) === String(id));
       if (!itemMap[id]) {
         itemMap[id] = {
@@ -250,7 +233,6 @@ function getUniqueOrderedItems(table) {
 }
 
 function itemPrice(item) {
-  // Try to get price from menuItems, fallback to item.price or 0
   const menuItem = menuItems.value.find(
     (m) => String(m.id) === String(item.menuItemId)
   );
@@ -294,7 +276,6 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
-// Helper to get today's reservations for the selected table
 function getTodaysReservations(table) {
   if (!table) return [];
   const today = todayISO();
@@ -316,7 +297,6 @@ async function printBillAndClearTable() {
         occupied: false,
       }),
     });
-    // Optionally, refetch tables/orders and close popup
     await fetchTables();
     closePopup();
   } catch (e) {
@@ -324,9 +304,7 @@ async function printBillAndClearTable() {
   }
 }
 
-// Edit order popup methods
 function openEditOrderPopup() {
-  // Pre-fill with current unique ordered items
   editOrderItems.value = {};
   getUniqueOrderedItems(selectedTable.value).forEach((item) => {
     editOrderItems.value[item.menuItemId] = { ...item };
@@ -339,16 +317,12 @@ function closeEditOrderPopup() {
 }
 
 async function saveEditedOrder() {
-  // Prepare new items array
   const newItems = Object.values(editOrderItems.value)
     .filter((i) => i.quantity > 0)
     .map((i) => ({
       menuItemId: i.menuItemId,
       quantity: i.quantity,
     }));
-  // Update all related orders for this table (simple version: delete all, create one new order)
-  // Or, if your API supports, update the latest order only
-  // Here, let's update the latest order for simplicity:
   const tableOrders = getTableOrders(selectedTable.value);
   if (tableOrders.length === 0) return closeEditOrderPopup();
   const latestOrder = tableOrders[tableOrders.length - 1];
@@ -458,12 +432,10 @@ async function saveEditedOrder() {
         </button>
         <button v-else @click="printBillAndClearTable">Odstampaj racun</button>
 
-        <!-- Open menu popup on click -->
         <button @click="openMenuPopup" v-if="selectedTable.occupied">
           Dodaj stavku na račun
         </button>
 
-        <!-- Add this button to open the edit order popup -->
         <button
           v-if="
             selectedTable.occupied &&
@@ -633,7 +605,6 @@ async function saveEditedOrder() {
   background: #aeeaaa;
   font-weight: bold;
   cursor: pointer;
-  transition: background 0.2s;
 }
 
 #no-color {
@@ -648,7 +619,6 @@ async function saveEditedOrder() {
   background-color: lightcoral;
 }
 
-/* New styles for menu popup */
 .menu-grid-scroll {
   max-height: 520px;
   overflow-y: auto;
@@ -691,7 +661,7 @@ async function saveEditedOrder() {
   color: #007bff;
 }
 
-/* Make the first (table) popup smaller */
+
 .popup-box {
   background: #fff;
   padding: 2rem 2.5rem;
@@ -700,7 +670,6 @@ async function saveEditedOrder() {
   position: relative;
 }
 
-/* Make the menu popup larger by targeting it specifically */
 .menu-popup-box {
   min-width: 600px;
   max-width: 900px;

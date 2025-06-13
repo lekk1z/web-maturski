@@ -40,91 +40,87 @@
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      menu: [],
-      saving: false,
-      nextId: 100000,
-      categories: {
-        1: "Topli napici",
-        2: "Hladni napici",
-        3: "Hrana",
-        4: "Dezerti",
-      },
-    };
-  },
-  computed: {
-    groupedMenu() {
-      // Group items by categoryId
-      return this.menu.reduce((acc, item) => {
-        const cat = item.categoryId;
-        if (!acc[cat]) acc[cat] = [];
-        acc[cat].push(item);
-        return acc;
-      }, {});
-    },
-  },
-  methods: {
-    categoryName(catId) {
-      return this.categories[catId] || "Nepoznata kategorija";
-    },
-    async fetchMenu() {
-      const res = await fetch("http://localhost:8080/api/menu");
-      this.menu = await res.json();
-      const maxId = this.menu.reduce(
-        (max, item) => (item.id > max ? item.id : max),
-        0
-      );
-      this.nextId = maxId + 1;
-    },
-    async saveMenu() {
-      this.saving = true;
-      for (const item of this.menu) {
-        await fetch(`http://localhost:8080/api/menu/${item.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(item),
-        });
-      }
-      this.saving = false;
-      alert("Meni je ažuriran!");
-    },
-    async deleteItemById(id) {
-      if (!confirm("Da li ste sigurni da želite da obrišete ovu stavku?"))
-        return;
-      const res = await fetch(`http://localhost:8080/api/menu/${id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        await this.fetchMenu();
-      } else {
-        alert("Greška pri brisanju stavke.");
-      }
-    },
-    async addItem() {
-      const newItem = {
-        name: "",
-        price: 0,
-        categoryId: 4,
-      };
-      const res = await fetch("http://localhost:8080/api/menu", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newItem),
-      });
-      if (res.ok) {
-        await this.fetchMenu();
-      } else {
-        alert("Greška pri dodavanju stavke.");
-      }
-    },
-  },
-  mounted() {
-    this.fetchMenu();
-  },
+<script setup>
+import { ref, computed, onMounted } from "vue";
+
+const menu = ref([]);
+const saving = ref(false);
+const nextId = ref(100000);
+const categories = {
+  1: "Topli napici",
+  2: "Hladni napici",
+  3: "Hrana",
+  4: "Dezerti",
 };
+
+const groupedMenu = computed(() => {
+  // Group items by categoryId
+  return menu.value.reduce((acc, item) => {
+    const cat = item.categoryId;
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(item);
+    return acc;
+  }, {});
+});
+
+function categoryName(catId) {
+  return categories[catId] || "Nepoznata kategorija";
+}
+
+async function fetchMenu() {
+  const res = await fetch("http://localhost:8080/api/menu");
+  menu.value = await res.json();
+  const maxId = menu.value.reduce(
+    (max, item) => (item.id > max ? item.id : max),
+    0
+  );
+  nextId.value = maxId + 1;
+}
+
+async function saveMenu() {
+  saving.value = true;
+  for (const item of menu.value) {
+    await fetch(`http://localhost:8080/api/menu/${item.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(item),
+    });
+  }
+  saving.value = false;
+  alert("Meni je ažuriran!");
+}
+
+async function deleteItemById(id) {
+  if (!confirm("Da li ste sigurni da želite da obrišete ovu stavku?")) return;
+  const res = await fetch(`http://localhost:8080/api/menu/${id}`, {
+    method: "DELETE",
+  });
+  if (res.ok) {
+    await fetchMenu();
+  } else {
+    alert("Greška pri brisanju stavke.");
+  }
+}
+
+async function addItem() {
+  const newItem = {
+    name: "",
+    price: 0,
+    categoryId: 4,
+  };
+  const res = await fetch("http://localhost:8080/api/menu", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(newItem),
+  });
+  if (res.ok) {
+    await fetchMenu();
+  } else {
+    alert("Greška pri dodavanju stavke.");
+  }
+}
+
+onMounted(fetchMenu);
 </script>
 
 <style scoped>

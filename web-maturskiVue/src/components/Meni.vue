@@ -9,8 +9,7 @@ const CATEGORY_MAP = {
   1: "Topli napici",
   2: "Hladni napici",
   3: "Jela",
-  4: "Dezerti",
-  // Dodaj još po potrebi
+  4: "Dezerti"
 };
 
 function groupMenuByCategory(items) {

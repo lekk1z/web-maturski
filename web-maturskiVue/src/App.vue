@@ -15,7 +15,6 @@ async function fetchUsers() {
     const res = await fetch("http://localhost:8080/api/users");
     if (!res.ok) throw new Error("Greška pri preuzimanju korisnika");
     users.value = await res.json();
-    // Set default user from sessionStorage or first user
     const storedUser = sessionStorage.getItem("user");
     if (storedUser) {
       const parsed = JSON.parse(storedUser);
@@ -25,7 +24,6 @@ async function fetchUsers() {
       user.value = users.value[0];
     }
   } catch (e) {
-    // fallback if error
     user.value = { name: "Marko" };
   }
 }
@@ -38,7 +36,6 @@ async function addUser(newName) {
   });
   if (!res.ok) throw new Error("Greška pri dodavanju korisnika");
   await fetchUsers();
-  // Return the added user object
   return users.value.find((u) => u.name === newName);
 }
 

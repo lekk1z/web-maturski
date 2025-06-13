@@ -78,7 +78,6 @@ async function fetchTables() {
   }
 }
 
-// Helper to combine date and time to Java LocalDateTime format (e.g. "2024-06-01T18:30")
 function toLocalDateTime(date, time) {
   return `${date}T${time}`;
 }
