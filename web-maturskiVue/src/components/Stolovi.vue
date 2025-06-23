@@ -287,7 +287,16 @@ function getTodaysReservations(table) {
 async function printBillAndClearTable() {
   if (!selectedTable.value) return;
   try {
-    // Clear ordersId and set occupied to false
+    // 1. Delete all orders for this table
+    const tableOrders = getTableOrders(selectedTable.value);
+    for (const order of tableOrders) {
+      const res = await fetch(`http://localhost:8080/api/orders/${order.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Greška pri brisanju računa");
+    }
+
+    // 2. Clear ordersId and set occupied to false in the table
     await fetch(`http://localhost:8080/api/tables/${selectedTable.value.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -297,20 +306,12 @@ async function printBillAndClearTable() {
         occupied: false,
       }),
     });
+
     await fetchTables();
     closePopup();
-  } catch (e) {
-    alert(e.message || "Greška pri štampanju računa i oslobađanju stola");
-  }
-  try {
-    const res = await fetch(`http://localhost:8080/api/orders/${orderId}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) throw new Error("Greška pri brisanju računa");
-    await fetchOrders();
     alert("Račun je odštampan i obrisan!");
   } catch (e) {
-    alert(e.message || "Greška pri brisanju računa");
+    alert(e.message || "Greška pri štampanju računa i oslobađanju stola");
   }
 }
 
