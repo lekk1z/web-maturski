@@ -302,6 +302,16 @@ async function printBillAndClearTable() {
   } catch (e) {
     alert(e.message || "Greška pri štampanju računa i oslobađanju stola");
   }
+  try {
+    const res = await fetch(`http://localhost:8080/api/orders/${orderId}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error("Greška pri brisanju računa");
+    await fetchOrders();
+    alert("Račun je odštampan i obrisan!");
+  } catch (e) {
+    alert(e.message || "Greška pri brisanju računa");
+  }
 }
 
 function openEditOrderPopup() {
